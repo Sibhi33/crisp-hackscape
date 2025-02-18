@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Card } from "@/components/ui/card";
@@ -10,8 +9,8 @@ const Index = () => {
     <div className="min-h-screen w-full overflow-hidden relative flex flex-col">
       <ParticleBackground />
       
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 w-full border-b border-white/10 backdrop-blur-md bg-background/80">
+      {/* Navbar with enhanced glass effect */}
+      <nav className="sticky top-0 z-50 w-full border-b border-white/20 bg-background/40 backdrop-blur-xl">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-8">
@@ -47,34 +46,49 @@ const Index = () => {
           transition={{ duration: 0.5 }}
           className="space-y-16"
         >
-          {/* Hero Section */}
-          <header className="text-center space-y-4">
-            <div className="inline-block px-4 py-1 rounded-full bg-electric-blue/10 text-electric-blue text-sm font-medium mb-4">
+          {/* Hero Section with enhanced title */}
+          <header className="text-center space-y-6">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="inline-block px-6 py-2 rounded-full bg-electric-blue/10 text-electric-blue text-sm font-medium mb-4 backdrop-blur-md border border-electric-blue/20"
+            >
               Welcome to Crisp
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-electric-blue via-cyber-purple to-cyber-pink bg-clip-text text-transparent">
+            </motion.div>
+            <motion.h1
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.7, delay: 0.2 }}
+              className="text-5xl md:text-7xl font-black bg-gradient-to-r from-electric-blue via-cyber-purple to-cyber-pink bg-clip-text text-transparent drop-shadow-lg"
+            >
               Hackathon Platform
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            </motion.h1>
+            <motion.p
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.7, delay: 0.4 }}
+              className="text-xl text-muted-foreground max-w-2xl mx-auto"
+            >
               Connect, create, and collaborate in the most innovative hackathon platform
-            </p>
+            </motion.p>
           </header>
 
-          {/* Feature Cards */}
+          {/* Feature Cards with enhanced glass effect */}
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card className="glassmorphism p-6 card-hover">
+            <Card className="glassmorphism p-6 card-hover border border-white/20 bg-background/40 backdrop-blur-xl">
               <Trophy className="w-8 h-8 text-electric-blue mb-4" />
               <h3 className="text-xl font-semibold mb-2">Active Hackathons</h3>
               <p className="text-muted-foreground">Discover ongoing competitions and join the innovation.</p>
             </Card>
             
-            <Card className="glassmorphism p-6 card-hover">
+            <Card className="glassmorphism p-6 card-hover border border-white/20 bg-background/40 backdrop-blur-xl">
               <Code className="w-8 h-8 text-electric-blue mb-4" />
               <h3 className="text-xl font-semibold mb-2">Your Projects</h3>
               <p className="text-muted-foreground">Track your progress and manage your hackathon projects.</p>
             </Card>
             
-            <Card className="glassmorphism p-6 card-hover">
+            <Card className="glassmorphism p-6 card-hover border border-white/20 bg-background/40 backdrop-blur-xl">
               <Users className="w-8 h-8 text-electric-blue mb-4" />
               <h3 className="text-xl font-semibold mb-2">Team Formation</h3>
               <p className="text-muted-foreground">Find teammates and build your dream team.</p>
@@ -152,8 +166,8 @@ const Index = () => {
         </motion.div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-white/10 bg-background/80 backdrop-blur-md mt-16">
+      {/* Footer with enhanced glass effect */}
+      <footer className="border-t border-white/20 bg-background/40 backdrop-blur-xl mt-16">
         <div className="container mx-auto px-4 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="space-y-4">
