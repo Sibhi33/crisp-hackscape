@@ -1,4 +1,4 @@
-"use client"
+'use client';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -10,7 +10,11 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
-  signUpWithEmail: (email: string, password: string, name: string) => Promise<void>;
+  signUpWithEmail: (
+    email: string,
+    password: string,
+    name: string
+  ) => Promise<void>;
   signOut: () => Promise<void>;
   isLoading: boolean;
 }
@@ -91,7 +95,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const signUpWithEmail = async (email: string, password: string, name: string) => {
+  const signUpWithEmail = async (
+    email: string,
+    password: string,
+    name: string
+  ) => {
     try {
       const { error } = await supabase.auth.signUp({
         email,

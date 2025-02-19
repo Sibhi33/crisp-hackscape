@@ -1,22 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata } from 'next';
 
-import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
-import "./globals.css";
-import { AuthProvider } from "@/contexts/AuthContext";
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  weights: ["400", "700"],
-});
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  weights: ["400", "700"],
-});
-
+import './globals.css';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
-  title: "Crisp",
-  description: "Your complete hackathon companion", 
+  title: 'Crisp',
+  description: 'Your complete hackathon companion',
 };
 
 export default function RootLayout({
@@ -26,13 +15,9 @@ export default function RootLayout({
 }>) {
   return (
     <AuthProvider>
-    <html lang="en">
-      <body
-        className={spaceGrotesk.className}
-      >
-        {children}
-      </body>
-    </html>
+      <html lang="en">
+        <body>{children}</body>
+      </html>
     </AuthProvider>
   );
 }
