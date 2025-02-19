@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 
 interface Planet {
@@ -34,8 +33,8 @@ export const ParticleBackground = () => {
 
     let animationFrameId: number;
     let particles: any[] = [];
-    let planets: Planet[] = [];
-    let codeSymbols: CodeSymbol[] = [];
+    const planets: Planet[] = [];
+    const codeSymbols: CodeSymbol[] = [];
     let mouseX = 0;
     let mouseY = 0;
 
@@ -43,7 +42,7 @@ export const ParticleBackground = () => {
     const createPlanets = () => {
       const planetColors = ['#4A90E2', '#C471ED', '#FF6B6B', '#50E3C2'];
       const numberOfPlanets = 4;
-      
+
       for (let i = 0; i < numberOfPlanets; i++) {
         planets.push({
           x: Math.random() * canvas.width,
@@ -53,7 +52,7 @@ export const ParticleBackground = () => {
           speedX: (Math.random() - 0.5) * 0.2,
           speedY: (Math.random() - 0.5) * 0.2,
           rotation: 0,
-          rotationSpeed: (Math.random() - 0.5) * 0.02
+          rotationSpeed: (Math.random() - 0.5) * 0.02,
         });
       }
     };
@@ -62,7 +61,7 @@ export const ParticleBackground = () => {
     const createCodeSymbols = () => {
       const symbols = ['{ }', '< >', '/>', '[]', '()', '&&', '=>', '++', '||'];
       const numberOfSymbols = 15;
-      
+
       for (let i = 0; i < numberOfSymbols; i++) {
         codeSymbols.push({
           x: Math.random() * canvas.width,
@@ -71,7 +70,7 @@ export const ParticleBackground = () => {
           color: `rgba(${Math.random() * 100 + 156}, ${Math.random() * 100 + 156}, 255, 0.3)`,
           size: Math.random() * 14 + 10,
           speedX: (Math.random() - 0.5) * 0.5,
-          speedY: (Math.random() - 0.5) * 0.5
+          speedY: (Math.random() - 0.5) * 0.5,
         });
       }
     };
@@ -133,7 +132,7 @@ export const ParticleBackground = () => {
     };
 
     const updatePlanets = () => {
-      planets.forEach(planet => {
+      planets.forEach((planet) => {
         planet.x += planet.speedX;
         planet.y += planet.speedY;
         planet.rotation += planet.rotationSpeed;
@@ -146,7 +145,7 @@ export const ParticleBackground = () => {
     };
 
     const updateCodeSymbols = () => {
-      codeSymbols.forEach(symbol => {
+      codeSymbols.forEach((symbol) => {
         symbol.x += symbol.speedX;
         symbol.y += symbol.speedY;
 
@@ -158,28 +157,36 @@ export const ParticleBackground = () => {
     };
 
     const drawPlanets = () => {
-      planets.forEach(planet => {
+      planets.forEach((planet) => {
         if (!ctx) return;
         ctx.save();
         ctx.translate(planet.x, planet.y);
         ctx.rotate(planet.rotation);
-        
+
         // Planet glow effect
         const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, planet.radius);
         gradient.addColorStop(0, planet.color);
         gradient.addColorStop(1, 'transparent');
-        
+
         ctx.beginPath();
         ctx.arc(0, 0, planet.radius, 0, Math.PI * 2);
         ctx.fillStyle = gradient;
         ctx.fill();
-        
+
         // Planet rings
         ctx.beginPath();
-        ctx.ellipse(0, 0, planet.radius * 1.5, planet.radius * 0.3, 0, 0, Math.PI * 2);
+        ctx.ellipse(
+          0,
+          0,
+          planet.radius * 1.5,
+          planet.radius * 0.3,
+          0,
+          0,
+          Math.PI * 2
+        );
         ctx.strokeStyle = `${planet.color}44`;
         ctx.stroke();
-        
+
         ctx.restore();
       });
     };
@@ -187,7 +194,7 @@ export const ParticleBackground = () => {
     const drawCodeSymbols = () => {
       if (!ctx) return;
       ctx.font = `monospace`;
-      codeSymbols.forEach(symbol => {
+      codeSymbols.forEach((symbol) => {
         ctx.font = `${symbol.size}px JetBrains Mono`;
         ctx.fillStyle = symbol.color;
         ctx.fillText(symbol.text, symbol.x, symbol.y);
@@ -196,25 +203,25 @@ export const ParticleBackground = () => {
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
+
       // Draw background gradient
       const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
       gradient.addColorStop(0, '#0B1120');
       gradient.addColorStop(1, '#1A1F2C');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
+
       particles.forEach((particle) => {
         particle.update();
         particle.draw();
       });
-      
+
       updatePlanets();
       drawPlanets();
-      
+
       updateCodeSymbols();
       drawCodeSymbols();
-      
+
       animationFrameId = requestAnimationFrame(animate);
     };
 

@@ -1,8 +1,5 @@
-import Index from "@/components/Landing";
-import Image from "next/image";
+import Index from '@/components/Landing';
 
 export default function Home() {
-  return (
-    <Index/>
-  );
+  return <Index />;
 }
