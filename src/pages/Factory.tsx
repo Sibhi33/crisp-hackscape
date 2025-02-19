@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
+import { pipeline } from "@huggingface/transformers";
 
 interface ProjectDetails {
   hackathonName: string;
@@ -44,23 +45,56 @@ const Factory = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/analyze-project", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(details),
+      // Initialize the text generation pipeline
+      const generator = await pipeline(
+        "text-generation",
+        "Xenova/smalltext-gpt2",
+        { device: "webgpu" }
+      );
+
+      // Create the prompt
+      const prompt = `Given a hackathon project:
+      Hackathon: ${details.hackathonName}
+      Track: ${details.track}
+      Problem Statement: ${details.problemStatement}
+      
+      Let's analyze this project and break it down into three parts:
+      
+      1. Approach: Here's a high-level approach to solving this problem:
+      2. Technologies: Here are the recommended technologies (using -):
+      3. Next Steps: Here are the concrete next steps (using -):`;
+
+      // Generate the response
+      const result = await generator(prompt, {
+        max_new_tokens: 500,
+        temperature: 0.7,
       });
 
-      if (!response.ok) throw new Error("Failed to analyze project");
-      
-      const data = await response.json();
-      setAnalysis(data);
+      // Parse the generated text
+      const text = result[0].generated_text;
+      const sections = text.split(/\d\./g).filter(Boolean);
+
+      const analysis: AIAnalysis = {
+        approach: sections[0]?.trim() || "Focus on building a minimum viable product that addresses the core problem.",
+        technologies: (sections[1]?.match(/-(.*)/g) || [
+          "- React for frontend development",
+          "- Node.js for backend services",
+          "- MongoDB for data storage",
+        ]).map(t => t.replace("-", "").trim()),
+        nextSteps: (sections[2]?.match(/-(.*)/g) || [
+          "- Create project repository",
+          "- Set up development environment",
+          "- Build basic UI prototype",
+        ]).map(s => s.replace("-", "").trim()),
+      };
+
+      setAnalysis(analysis);
       toast({
         title: "Analysis complete",
         description: "Check out our suggestions below!",
       });
     } catch (error) {
+      console.error("Analysis error:", error);
       toast({
         title: "Error",
         description: "Failed to analyze project. Please try again.",
