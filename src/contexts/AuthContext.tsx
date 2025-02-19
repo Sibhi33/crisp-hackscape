@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
@@ -9,6 +8,8 @@ interface AuthContextType {
   session: Session | null;
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
   isLoading: boolean;
 }
@@ -69,6 +70,51 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const signInWithEmail = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      toast({
+        title: 'Success',
+        description: 'Signed in successfully',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to sign in',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const signUpWithEmail = async (email: string, password: string, name: string) => {
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+          },
+        },
+      });
+      if (error) throw error;
+      toast({
+        title: 'Success',
+        description: 'Please check your email to verify your account',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to sign up',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -89,6 +135,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         session,
         signInWithGoogle,
         signInWithApple,
+        signInWithEmail,
+        signUpWithEmail,
         signOut,
         isLoading,
       }}
