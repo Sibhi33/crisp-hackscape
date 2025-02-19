@@ -1,6 +1,6 @@
 
 import { useAuth } from "@/contexts/AuthContext";
-import { Link } from "react-router-dom";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Link from "next/link";
 
 export const Navbar = () => {
   const { user, signOut } = useAuth();
@@ -17,20 +18,20 @@ export const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-8">
-            <Link to="/" className="text-xl font-space font-bold text-electric-blue">
+            <Link href="/" className="text-xl font-space font-bold text-electric-blue">
               Crisp
             </Link>
             <div className="hidden md:flex space-x-6">
-              <Link to="/hackathons" className="text-sm text-foreground/80 hover:text-electric-blue transition-colors">
+              <Link href="/hackathons" className="text-sm text-foreground/80 hover:text-electric-blue transition-colors">
                 Hackathons
               </Link>
-              <Link to="/projects" className="text-sm text-foreground/80 hover:text-electric-blue transition-colors">
+              <Link href="/projects" className="text-sm text-foreground/80 hover:text-electric-blue transition-colors">
                 Projects
               </Link>
-              <Link to="/teams" className="text-sm text-foreground/80 hover:text-electric-blue transition-colors">
+              <Link href="/teams" className="text-sm text-foreground/80 hover:text-electric-blue transition-colors">
                 Teams
               </Link>
-              <Link to="/resources" className="text-sm text-foreground/80 hover:text-electric-blue transition-colors">
+              <Link href="/resources" className="text-sm text-foreground/80 hover:text-electric-blue transition-colors">
                 Resources
               </Link>
             </div>
@@ -53,7 +54,7 @@ export const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Link to="/login" className="cyber-button text-sm">
+            <Link href="/login" className="cyber-button text-sm">
               Sign In
             </Link>
           )}

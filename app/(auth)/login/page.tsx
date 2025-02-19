@@ -1,4 +1,4 @@
-
+"use client"
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
