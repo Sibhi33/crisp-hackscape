@@ -199,7 +199,7 @@ Keep your response factual and evidence-based. Do not make assumptions or includ
       const content = completion.choices[0]?.message?.content || "";
       // console.log("content", content);
       // Parse response sections
-      const sections = [
+      const sections: { key: keyof ApiResponse; start: string; end: string | null }[] = [
         { key: 'ideaDescription', start: '1) Idea Description:', end: '2) Existing Competitors:' },
         { key: 'existingCompetitors', start: '2) Existing Competitors:', end: '3) Impact:' },
         { key: 'impact', start: '3) Impact:', end: '4) Unique Value Propositions:' },
@@ -207,6 +207,7 @@ Keep your response factual and evidence-based. Do not make assumptions or includ
         { key: 'otherInformation', start: '5) Other Information:', end: '6) Reference Links & Resources:' },
         { key: 'referenceLinks', start: '6) Reference Links & Resources:', end: null }
       ];
+      
 
 
       const result: ApiResponse = {} as ApiResponse;
@@ -228,7 +229,7 @@ Keep your response factual and evidence-based. Do not make assumptions or includ
         }
 
         // Extract content and remove any trailing "**" markers
-        let sectionContent = content
+        const sectionContent = content
           .slice(startIndex + section.start.length, endIndex)
           .trim()
           .replace(/\*\*\d+\)\s*$/, ''); // Remove trailing "**N)" pattern

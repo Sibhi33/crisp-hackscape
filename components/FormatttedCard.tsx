@@ -1,9 +1,15 @@
+import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { ExternalLink } from 'lucide-react';
 
-const FormattedAnalysisCard = ({ title, content }) => {
+interface FormattedAnalysisCardProps {
+  title: string;
+  content: string;
+}
+
+const FormattedAnalysisCard: React.FC<FormattedAnalysisCardProps> = ({ title, content }) => {
   // Function to render text with links
-  const renderTextWithLinks = (text) => {
+  const renderTextWithLinks = (text: string): React.ReactNode[] => {
     const parts = text.split(/(<https?:\/\/[^>]+>)/);
     return parts.map((part, index) => {
       const linkMatch = part.match(/<(https?:\/\/[^>]+)>/);
@@ -27,10 +33,10 @@ const FormattedAnalysisCard = ({ title, content }) => {
   };
 
   // Function to process content into hierarchical structure
-  const processContent = (text) => {
+  const processContent = (text: string): React.ReactNode[] => {
     const lines = text.split('\n');
     let currentSection = '';
-    let formattedContent = [];
+    const formattedContent: React.ReactNode[] = [];
     
     lines.forEach((line, index) => {
       const trimmedLine = line.trim();
