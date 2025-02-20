@@ -25,6 +25,12 @@ export const Navbar = () => {
             </Link>
             <div className="hidden md:flex space-x-6">
               <Link
+                href="/assistant"
+                className="text-sm text-foreground/80 hover:text-electric-blue transition-colors"
+              >
+                Assistant
+              </Link>
+              <Link
                 href="/hackathons"
                 className="text-sm text-foreground/80 hover:text-electric-blue transition-colors"
               >
