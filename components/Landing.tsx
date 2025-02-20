@@ -43,9 +43,9 @@ const Index = () => {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.7, delay: 0.2 }}
-              className="text-5xl md:text-7xl font-black bg-gradient-to-r from-electric-blue via-cyber-purple to-cyber-pink bg-clip-text text-transparent drop-shadow-lg"
+              className="text-5xl md:text-7xl font-black bg-gradient-to-r from-slate-300 via-yellow-300 to-cyber-pink bg-clip-text text-transparent drop-shadow-lg"
             >
-              Hackathon Platform
+              Your Hackathon Genie
             </motion.h1>
             <motion.p
               initial={{ y: 20, opacity: 0 }}
@@ -53,7 +53,7 @@ const Index = () => {
               transition={{ duration: 0.7, delay: 0.4 }}
               className="text-xl text-muted-foreground max-w-2xl mx-auto"
             >
-              Connect, create, and collaborate in the most innovative hackathon
+              Connect, create, and collaborate in the most innovative hackathon assistance
               platform
             </motion.p>
           </header>
