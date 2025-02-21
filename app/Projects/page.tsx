@@ -2,7 +2,7 @@
 import { Navbar } from "@/components/Navbar";
 import { ParticleBackground } from "@/components/ParticleBackground";
 import { Card, CardTitle } from "@/components/ui/card-hover-effect";
-import { TypewriterEffect } from "@/components/ui/typewriter-effect";
+import { TypewriterEffectSmooth } from "@/components/ui/typewriter-effect";
 import React from "react";
 
 const Projects = () => {
@@ -10,7 +10,7 @@ const Projects = () => {
     <div className="min-h-screen w-full overflow-hidden relative flex flex-col">
       <ParticleBackground />
       <Navbar />
-
+      <TypewriterEffectSmoothDemo/>
       {/* Project Grid */}
       <div className="container mx-auto px-6 py-12 flex-grow">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-[80vh]">
@@ -75,5 +75,39 @@ const Projects = () => {
     </div>
   );
 };
+
+export function TypewriterEffectSmoothDemo() {
+  const words = [
+    {
+      text: "Build",
+      className: "text-white-500 dark:text-blue-500 text-5xl ",
+    },
+    {
+      text: "awesome",
+      className: "text-white-500 dark:text-blue-500 text-5xl",
+    },
+    {
+      text: "apps",
+      className: "text-white-500 dark:text-blue-500 text-5xl",
+    },
+    {
+      text: "with",
+      className: "text-white-500 dark:text-blue-500 text-5xl",
+    },
+    {
+      text: "Crisp.",
+      className: "text-blue-500 dark:text-blue-500 text-5xl",
+    },
+  ];
+  return (
+    <div className="flex flex-col place-items-start justify-start h-[10rem] z-50  pl-72 pb-8">
+ 
+      <TypewriterEffectSmooth words={words} />
+      <p>hi</p>
+      
+    </div>
+  );
+}
+
 
 export default Projects;
