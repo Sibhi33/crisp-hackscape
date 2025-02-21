@@ -5,7 +5,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
   title: 'Crisp',
-  description: 'Your complete hackathon companion',
+  description: 'Your hackathon companion',
 };
 
 export default function RootLayout({

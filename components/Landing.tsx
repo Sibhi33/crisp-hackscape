@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Navbar } from './Navbar';
 
+
 const Index = () => {
   return (
     <div className="min-h-screen w-full overflow-hidden relative flex flex-col">
@@ -53,10 +54,19 @@ const Index = () => {
               transition={{ duration: 0.7, delay: 0.4 }}
               className="text-xl text-muted-foreground max-w-2xl mx-auto"
             >
-              Connect, create, and collaborate in the most innovative hackathon
+              Connect, create, and collaborate in the most innovative hackathon assistance
               platform
             </motion.p>
           </header>
+          <section className="text-center space-y-6">
+            <h2 className="text-3xl font-bold">Ready to Start Hacking?</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Join thousands of developers and innovators building the future.
+            </p>
+            <button className="cyber-button inline-flex items-center">
+              Start Hacking <ChevronRight className="ml-2 w-4 h-4" />
+            </button>
+          </section>
 
           {/* Feature Cards with enhanced glass effect */}
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -85,7 +95,7 @@ const Index = () => {
             </Card>
           </section>
 
-          {/* Platform Features */}
+          {/* Platform Features
           <section className="space-y-12">
             <h2 className="text-3xl font-bold text-center">
               Why Choose Crisp?
@@ -149,20 +159,12 @@ const Index = () => {
                 </p>
               </motion.div>
             </div>
-          </section>
-
-          {/* CTA Section */}
-          <section className="text-center space-y-6">
-            <h2 className="text-3xl font-bold">Ready to Start Hacking?</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Join thousands of developers and innovators building the future.
-            </p>
-            <button className="cyber-button inline-flex items-center">
-              Start Hacking <ChevronRight className="ml-2 w-4 h-4" />
-            </button>
-          </section>
+          </section> */}
+          
+         
         </motion.div>
       </main>
+      {/* CTA Section */}
 
       {/* Footer with enhanced glass effect */}
       <footer className="border-t border-white/20 bg-background/40 backdrop-blur-xl mt-16">
@@ -294,5 +296,8 @@ const Index = () => {
     </div>
   );
 };
+
+
+
 
 export default Index;

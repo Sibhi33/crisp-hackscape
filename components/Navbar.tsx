@@ -15,13 +15,14 @@ export const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-white/20 bg-background/40 backdrop-blur-xl">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           <div className="flex items-center space-x-8">
             <Link
               href="/"
-              className="text-xl font-space font-bold text-electric-blue"
+              className="text-large font-space font-bold text-electric-blue h-25"
             >
-              Crisp
+            crisp
+
             </Link>
             <div className="hidden md:flex space-x-6">
               <Link
