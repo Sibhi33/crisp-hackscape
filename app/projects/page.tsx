@@ -13,18 +13,24 @@ const Projects = () => {
       <TypewriterEffectSmoothDemo />
       {/* Project Grid */}
       <div className="container mx-auto px-6 py-12 flex-grow">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-[80vh]">
-          <Card className="flex items-center justify-center text-center h-full">
-            <CardTitle className="text-2xl">Project 1</CardTitle>
+        <div className="grid grid-cols-3 md:grid-cols-2 gap-5 h-[50vh]">
+          <Card className="flex items-center justify-center text-center h-full bg-gradient-to-r from-purple-400 to-purple-700">
+            <CardTitle className="text-3xl">Health-Tech</CardTitle>
           </Card>
-          <Card className="flex items-center justify-center text-center h-full">
-            <CardTitle className="text-2xl">Project 2</CardTitle>
+          <Card className="flex items-center justify-center text-center h-full bg-gradient-to-r from-purple-400 to-purple-700">
+            <CardTitle className="text-3xl">AI / ML</CardTitle>
           </Card>
-          <Card className="flex items-center justify-center text-center h-full">
-            <CardTitle className="text-2xl">Project 3</CardTitle>
+          <Card className="flex items-center justify-center text-center h-full bg-gradient-to-r from-purple-400 to-purple-700">
+            <CardTitle className="text-3xl">Web3 & Blockchain</CardTitle>
           </Card>
-          <Card className="flex items-center justify-center text-center h-full">
-            <CardTitle className="text-2xl">Project 4</CardTitle>
+          <Card className="flex items-center justify-center text-center h-full bg-gradient-to-r from-purple-400 to-purple-700">
+            <CardTitle className="text-3xl">Agri-Tech</CardTitle>
+          </Card>
+          <Card className="flex items-center justify-center text-center h-full bg-gradient-to-r from-purple-400 to-purple-700">
+            <CardTitle className="text-3xl">Agri-Tech</CardTitle>
+          </Card>
+          <Card className="flex items-center justify-center text-center h-full bg-gradient-to-r from-purple-400 to-purple-700">
+            <CardTitle className="text-3xl">Agri-Tech</CardTitle>
           </Card>
         </div>
       </div>
@@ -128,29 +134,31 @@ function TypewriterEffectSmoothDemo() {
   const words = [
     {
       text: "Build",
-      className: "text-white-500 dark:text-blue-500 text-5xl",
+      className: "text-white-500 dark:text-blue-500 text-5xl font-sans",
     },
     {
       text: "awesome",
-      className: "text-white-500 dark:text-blue-500 text-5xl",
+      className: "text-white-500 dark:text-blue-500 text-5xl font-sans",
     },
     {
       text: "apps",
-      className: "text-white-500 dark:text-blue-500 text-5xl",
+      className: "text-white-500 dark:text-blue-500 text-5xl font-sans",
     },
     {
       text: "with",
-      className: "text-white-500 dark:text-blue-500 text-5xl",
+      className: "text-white-500 dark:text-blue-500 text-5xl font-sans",
     },
     {
       text: "Crisp.",
-      className: "text-blue-500 dark:text-blue-500 text-5xl",
+      className: "text-blue-500 dark:text-blue-500 text-5xl font-sans",
     },
   ];
   return (
     <div className="flex flex-col place-items-start justify-start h-[10rem] z-50 pl-72 pb-8">
       <TypewriterEffectSmooth words={words} />
-      <p>hi</p>
+      <p className="text-xl items-center justify-center">Explore our array of project resources and source codes </p>
+      <p className="text-xl items-center justify-center pl-40">categorised into problem statements below</p>
+      
     </div>
   );
 }
