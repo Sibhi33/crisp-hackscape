@@ -10,7 +10,7 @@ const Projects = () => {
     <div className="min-h-screen w-full overflow-hidden relative flex flex-col">
       <ParticleBackground />
       <Navbar />
-      <TypewriterEffectSmoothDemo/>
+      <TypewriterEffectSmoothDemo />
       {/* Project Grid */}
       <div className="container mx-auto px-6 py-12 flex-grow">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-[80vh]">
@@ -42,28 +42,76 @@ const Projects = () => {
             <div className="space-y-4">
               <h4 className="text-lg font-semibold">Platform</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-electric-blue transition-colors">Features</a></li>
-                <li><a href="#" className="hover:text-electric-blue transition-colors">Hackathons</a></li>
-                <li><a href="#" className="hover:text-electric-blue transition-colors">Teams</a></li>
-                <li><a href="#" className="hover:text-electric-blue transition-colors">Projects</a></li>
+                <li>
+                  <a href="#" className="hover:text-electric-blue transition-colors">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-electric-blue transition-colors">
+                    Hackathons
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-electric-blue transition-colors">
+                    Teams
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-electric-blue transition-colors">
+                    Projects
+                  </a>
+                </li>
               </ul>
             </div>
             <div className="space-y-4">
               <h4 className="text-lg font-semibold">Resources</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-electric-blue transition-colors">Documentation</a></li>
-                <li><a href="#" className="hover:text-electric-blue transition-colors">API</a></li>
-                <li><a href="#" className="hover:text-electric-blue transition-colors">Community</a></li>
-                <li><a href="#" className="hover:text-electric-blue transition-colors">Support</a></li>
+                <li>
+                  <a href="#" className="hover:text-electric-blue transition-colors">
+                    Documentation
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-electric-blue transition-colors">
+                    API
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-electric-blue transition-colors">
+                    Community
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-electric-blue transition-colors">
+                    Support
+                  </a>
+                </li>
               </ul>
             </div>
             <div className="space-y-4">
               <h4 className="text-lg font-semibold">Connect</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-electric-blue transition-colors">Twitter</a></li>
-                <li><a href="#" className="hover:text-electric-blue transition-colors">Discord</a></li>
-                <li><a href="#" className="hover:text-electric-blue transition-colors">GitHub</a></li>
-                <li><a href="#" className="hover:text-electric-blue transition-colors">LinkedIn</a></li>
+                <li>
+                  <a href="#" className="hover:text-electric-blue transition-colors">
+                    Twitter
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-electric-blue transition-colors">
+                    Discord
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-electric-blue transition-colors">
+                    GitHub
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-electric-blue transition-colors">
+                    LinkedIn
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
@@ -76,11 +124,11 @@ const Projects = () => {
   );
 };
 
-export function TypewriterEffectSmoothDemo() {
+function TypewriterEffectSmoothDemo() {
   const words = [
     {
       text: "Build",
-      className: "text-white-500 dark:text-blue-500 text-5xl ",
+      className: "text-white-500 dark:text-blue-500 text-5xl",
     },
     {
       text: "awesome",
@@ -100,14 +148,11 @@ export function TypewriterEffectSmoothDemo() {
     },
   ];
   return (
-    <div className="flex flex-col place-items-start justify-start h-[10rem] z-50  pl-72 pb-8">
- 
+    <div className="flex flex-col place-items-start justify-start h-[10rem] z-50 pl-72 pb-8">
       <TypewriterEffectSmooth words={words} />
       <p>hi</p>
-      
     </div>
   );
 }
-
 
 export default Projects;
