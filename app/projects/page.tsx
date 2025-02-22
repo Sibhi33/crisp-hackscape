@@ -154,10 +154,10 @@ function TypewriterEffectSmoothDemo() {
     },
   ];
   return (
-    <div className="flex flex-col place-items-start justify-start h-[10rem] z-50 pl-72 pb-8">
+    <div className="flex flex-col items-center justify-center h-[10rem] z-50">
       <TypewriterEffectSmooth words={words} />
-      <p className="text-xl items-center justify-center pl-28">Explore our array of project resources and source codes </p>
-      <p className="text-xl items-center justify-center pl-40">categorised into problem statements below</p>
+      <p className="text-xl">Explore our array of project resources and source codes </p>
+      <p className="text-xl ">categorised into problem statements below</p>
       
     </div>
   );
