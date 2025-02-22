@@ -8,10 +8,6 @@ import {
   Users,
   Trophy,
   ChevronRight,
-  Rocket,
-  Brain,
-  Cpu,
-  Globe,
 } from 'lucide-react';
 import { Navbar } from './Navbar';
 
