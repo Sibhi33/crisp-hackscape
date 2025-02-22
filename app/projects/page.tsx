@@ -27,10 +27,10 @@ const Projects = () => {
             <CardTitle className="text-3xl">Agri-Tech</CardTitle>
           </Card>
           <Card className="flex items-center justify-center text-center h-full bg-gradient-to-r from-purple-400 to-purple-700">
-            <CardTitle className="text-3xl">Agri-Tech</CardTitle>
+            <CardTitle className="text-3xl">Open-Innovation</CardTitle>
           </Card>
           <Card className="flex items-center justify-center text-center h-full bg-gradient-to-r from-purple-400 to-purple-700">
-            <CardTitle className="text-3xl">Agri-Tech</CardTitle>
+            <CardTitle className="text-3xl">Automation</CardTitle>
           </Card>
         </div>
       </div>
@@ -156,7 +156,7 @@ function TypewriterEffectSmoothDemo() {
   return (
     <div className="flex flex-col place-items-start justify-start h-[10rem] z-50 pl-72 pb-8">
       <TypewriterEffectSmooth words={words} />
-      <p className="text-xl items-center justify-center">Explore our array of project resources and source codes </p>
+      <p className="text-xl items-center justify-center pl-28">Explore our array of project resources and source codes </p>
       <p className="text-xl items-center justify-center pl-40">categorised into problem statements below</p>
       
     </div>
