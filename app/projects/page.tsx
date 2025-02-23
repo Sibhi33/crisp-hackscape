@@ -3,35 +3,35 @@ import { Navbar } from "@/components/Navbar";
 import { ParticleBackground } from "@/components/ParticleBackground";
 import { Card, CardTitle } from "@/components/ui/card-hover-effect";
 import { TypewriterEffectSmooth } from "@/components/ui/typewriter-effect";
+import { PinContainer } from "@/components/ui/3d-pin";
 import React from "react";
 
 const Projects = () => {
+  const projectCategories = [
+    "Health-Tech",
+    "AI / ML",
+    "Web3 & Blockchain",
+    "Agri-Tech",
+    "Open-Innovation",
+    "Automation",
+  ];
+
   return (
     <div className="min-h-screen w-full overflow-hidden relative flex flex-col">
       <ParticleBackground />
       <Navbar />
       <TypewriterEffectSmoothDemo />
-      {/* Project Grid */}
-      <div className="container mx-auto px-6 py-12 flex-grow">
-        <div className="grid grid-cols-3 md:grid-cols-2 gap-5 h-[50vh]">
-          <Card className="flex items-center justify-center text-center h-full bg-gradient-to-r from-purple-400 to-purple-700">
-            <CardTitle className="text-3xl">Health-Tech</CardTitle>
-          </Card>
-          <Card className="flex items-center justify-center text-center h-full bg-gradient-to-r from-purple-400 to-purple-700">
-            <CardTitle className="text-3xl">AI / ML</CardTitle>
-          </Card>
-          <Card className="flex items-center justify-center text-center h-full bg-gradient-to-r from-purple-400 to-purple-700">
-            <CardTitle className="text-3xl">Web3 & Blockchain</CardTitle>
-          </Card>
-          <Card className="flex items-center justify-center text-center h-full bg-gradient-to-r from-purple-400 to-purple-700">
-            <CardTitle className="text-3xl">Agri-Tech</CardTitle>
-          </Card>
-          <Card className="flex items-center justify-center text-center h-full bg-gradient-to-r from-purple-400 to-purple-700">
-            <CardTitle className="text-3xl">Open-Innovation</CardTitle>
-          </Card>
-          <Card className="flex items-center justify-center text-center h-full bg-gradient-to-r from-purple-400 to-purple-700">
-            <CardTitle className="text-3xl">Automation</CardTitle>
-          </Card>
+
+      {/* Grid layout with 6 cards having 3D hover effect */}
+      <div className="container mx-4 px-4 py-12 ">
+        <div className="grid grid-cols-3 md:grid-cols-3 gap-4">
+          {projectCategories.map((category, index) => (
+            <PinContainer key={index} title={category}>
+              <Card className="flex items-center justify-center text-center w-[20rem] h-[10rem] bg-gradient-to-r from-purple-400 to-purple-700">
+                <CardTitle className="text-2xl">{category}</CardTitle>
+              </Card>
+            </PinContainer>
+          ))}
         </div>
       </div>
 
@@ -132,33 +132,17 @@ const Projects = () => {
 
 function TypewriterEffectSmoothDemo() {
   const words = [
-    {
-      text: "Build",
-      className: "text-white-500 dark:text-blue-500 text-5xl font-sans",
-    },
-    {
-      text: "awesome",
-      className: "text-white-500 dark:text-blue-500 text-5xl font-sans",
-    },
-    {
-      text: "apps",
-      className: "text-white-500 dark:text-blue-500 text-5xl font-sans",
-    },
-    {
-      text: "with",
-      className: "text-white-500 dark:text-blue-500 text-5xl font-sans",
-    },
-    {
-      text: "Crisp.",
-      className: "text-blue-500 dark:text-blue-500 text-5xl font-sans",
-    },
+    { text: "Build", className: "text-white-500 dark:text-blue-500 text-5xl font-sans" },
+    { text: "awesome", className: "text-white-500 dark:text-blue-500 text-5xl font-sans" },
+    { text: "apps", className: "text-white-500 dark:text-blue-500 text-5xl font-sans" },
+    { text: "with", className: "text-white-500 dark:text-blue-500 text-5xl font-sans" },
+    { text: "Crisp.", className: "text-blue-500 dark:text-blue-500 text-5xl font-sans" },
   ];
   return (
     <div className="flex flex-col items-center justify-center h-[10rem] z-50">
       <TypewriterEffectSmooth words={words} />
-      <p className="text-xl">Explore our array of project resources and source codes </p>
-      <p className="text-xl ">categorised into problem statements below</p>
-      
+      <p className="text-xl">Explore our array of project resources and source codes</p>
+      <p className="text-xl">categorized into problem statements below</p>
     </div>
   );
 }
