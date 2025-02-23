@@ -23,7 +23,7 @@ const Projects = () => {
       <TypewriterEffectSmoothDemo />
 
       {/* Grid layout with 6 cards having 3D hover effect */}
-      <div className="container mx-4 px-4 py-12 ">
+      <div className="container mx-4 px-4 py-12 `">
         <div className="grid grid-cols-3 md:grid-cols-3 gap-4">
           {projectCategories.map((category, index) => (
             <PinContainer key={index} title={category}>
