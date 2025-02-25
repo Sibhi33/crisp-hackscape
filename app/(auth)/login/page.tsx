@@ -1,8 +1,9 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { Apple, Chrome } from 'lucide-react';
+import { Apple, Chrome, Loader } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -12,19 +13,56 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const {
-    signInWithGoogle,
-    signInWithApple,
-    signInWithEmail,
-    signUpWithEmail,
-  } = useAuth();
+  const [verificationMessage, setVerificationMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail } = useAuth();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSignUp) {
-      await signUpWithEmail(email, password, name);
-    } else {
-      await signInWithEmail(email, password);
+    setIsLoading(true);
+    try {
+      if (isSignUp) {
+        const success = await signUpWithEmail(email, password, name);
+        if (success) {
+          // Clear form fields if needed
+          setEmail('');
+          setPassword('');
+          setName('');
+          // Set a message informing the user that a verification email has been sent.
+          setVerificationMessage(
+            'A verification email has been sent to your email address. Please verify your account and then sign in.'
+          );
+          // Switch to sign in mode so they can log in.
+          setIsSignUp(false);
+        }
+      } else {
+        const success = await signInWithEmail(email, password);
+        if (success) {
+          // Redirect to home page on successful sign in
+          router.push('/');
+        }
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      await signInWithGoogle();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      await signInWithApple();
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -38,6 +76,13 @@ const Login = () => {
           {isSignUp ? 'Sign up to get started' : 'Sign in to continue to Crisp'}
         </p>
 
+        {/* Show verification message if it exists */}
+        {verificationMessage && (
+          <div className="p-2 bg-blue-100 text-blue-800 rounded text-sm text-center">
+            {verificationMessage}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {isSignUp && (
             <div className="space-y-2">
@@ -50,7 +95,7 @@ const Login = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
-                required={isSignUp}
+                required
               />
             </div>
           )}
@@ -83,8 +128,12 @@ const Login = () => {
             />
           </div>
 
-          <Button type="submit" className="w-full">
-            {isSignUp ? 'Sign Up' : 'Sign In'}
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? (
+              <Loader className="w-5 h-5 animate-spin" />
+            ) : (
+              <span>{isSignUp ? 'Sign Up' : 'Sign In'}</span>
+            )}
           </Button>
         </form>
 
@@ -95,6 +144,7 @@ const Login = () => {
           <button
             onClick={() => setIsSignUp(!isSignUp)}
             className="text-sm text-primary hover:underline"
+            disabled={isLoading}
           >
             {isSignUp ? 'Sign In' : 'Sign Up'}
           </button>
@@ -113,19 +163,35 @@ const Login = () => {
 
         <div className="space-y-4">
           <button
-            onClick={signInWithGoogle}
+            onClick={handleGoogleSignIn}
+            type="button"
             className="w-full flex items-center justify-center space-x-2 p-3 rounded-lg border border-white/20 hover:bg-white/5 transition-colors"
+            disabled={isLoading}
           >
-            <Chrome className="w-5 h-5" />
-            <span>Continue with Google</span>
+            {isLoading ? (
+              <Loader className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                <Chrome className="w-5 h-5" />
+                <span>Continue with Google</span>
+              </>
+            )}
           </button>
 
           <button
-            onClick={signInWithApple}
+            onClick={handleAppleSignIn}
+            type="button"
             className="w-full flex items-center justify-center space-x-2 p-3 rounded-lg border border-white/20 hover:bg-white/5 transition-colors"
+            disabled={isLoading}
           >
-            <Apple className="w-5 h-5" />
-            <span>Continue with Apple</span>
+            {isLoading ? (
+              <Loader className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                <Apple className="w-5 h-5" />
+                <span>Continue with Apple</span>
+              </>
+            )}
           </button>
         </div>
       </Card>

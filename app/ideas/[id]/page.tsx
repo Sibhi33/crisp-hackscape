@@ -119,7 +119,7 @@ const IdeaDetailsPage = () => {
           <Button
             variant="outline"
             onClick={() => router.back()}
-            className="hover:bg-gray-200 transition-colors"
+            className="hover:bg-gray-700 transition-colors"
           >
             ← Back
           </Button>

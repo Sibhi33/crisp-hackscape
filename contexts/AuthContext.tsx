@@ -9,12 +9,12 @@ interface AuthContextType {
   session: Session | null;
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
-  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<boolean>;
   signUpWithEmail: (
     email: string,
     password: string,
     name: string
-  ) => Promise<void>;
+  ) => Promise<boolean>;
   signOut: () => Promise<void>;
   isLoading: boolean;
 }
@@ -51,6 +51,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         provider: 'google',
       });
       if (error) throw error;
+      // OAuth redirection is typically handled by Supabase configuration
     } catch (error) {
       toast({
         title: 'Error',
@@ -66,6 +67,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         provider: 'apple',
       });
       if (error) throw error;
+      // OAuth redirection is typically handled by Supabase configuration
     } catch (error) {
       toast({
         title: 'Error',
@@ -75,7 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const signInWithEmail = async (email: string, password: string) => {
+  const signInWithEmail = async (email: string, password: string): Promise<boolean> => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -86,12 +88,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         title: 'Success',
         description: 'Signed in successfully',
       });
+      return true;
     } catch (error: any) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to sign in',
         variant: 'destructive',
       });
+      return false;
     }
   };
 
@@ -99,7 +103,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     email: string,
     password: string,
     name: string
-  ) => {
+  ): Promise<boolean> => {
     try {
       const { error } = await supabase.auth.signUp({
         email,
@@ -110,17 +114,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           },
         },
       });
-      if (error) throw error;
+      if (error) {
+        // Check if the error indicates a duplicate/existing email
+        if (
+          error.message.toLowerCase().includes('duplicate') ||
+          error.message.toLowerCase().includes('already')
+        ) {
+          toast({
+            title: 'Error',
+            description: 'This email is already registered',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Error',
+            description: error.message,
+            variant: 'destructive',
+          });
+        }
+        return false;
+      }
       toast({
         title: 'Success',
-        description: 'Please check your email to verify your account',
+        description: 'A verification email has been sent. Please check your inbox.',
       });
+      return true;
     } catch (error: any) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to sign up',
         variant: 'destructive',
       });
+      return false;
     }
   };
 
