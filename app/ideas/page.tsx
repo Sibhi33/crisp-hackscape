@@ -160,12 +160,12 @@ const IdeasPage = () => {
       {showShareModal && selectedProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-6 w-80">
-            <h2 className="text-xl font-semibold mb-4">Share Project</h2>
+            <h2 className="text-xl font-semibold mb-4 text-black">Share Project</h2>
             <input
               type="text"
               readOnly
               value={`${window.location.origin}/ideas/${selectedProject.id}`}
-              className="w-full p-2 border rounded mb-4"
+              className="w-full p-2 border rounded mb-4 text-black"
             />
             <Button onClick={handleCopy} className="w-full mb-2">
               {copied ? "Copied!" : "Copy Link"}
@@ -184,11 +184,11 @@ const IdeasPage = () => {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg p-6 w-80">
-            <h2 className="text-xl font-semibold mb-4">
+          <div className="bg-white rounded-lg p-6 w-80 ">
+            <h2 className="text-xl text-black font-semibold mb-4">
               Confirm Delete
             </h2>
-            <p className="mb-4">
+            <p className="mb-4 text-black">
               Are you sure you want to delete the project &quot;
               {selectedProject.PS}&quot;?
             </p>

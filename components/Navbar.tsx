@@ -69,7 +69,7 @@ export const Navbar = () => {
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem ><Link href="/ideas">Ideas</Link></DropdownMenuItem>
+              <Link href="/ideas"><DropdownMenuItem >Ideas</DropdownMenuItem></Link>
                 <DropdownMenuItem onClick={signOut}>Sign Out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
