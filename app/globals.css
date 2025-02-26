@@ -71,7 +71,6 @@
 
 
 /* Add this to your global CSS file */
-
 .markdown-content {
   line-height: 1.6;
 }
@@ -169,7 +168,17 @@
   transition: box-shadow 0.2s ease-in-out;
 }
 
-/* Copy button for code blocks */
+.code-block {
+  position: relative;
+}
+
+/* Copy button always visible */
+.code-block .copy-button {
+  min-width: 60px; /* Fixed width to prevent text reflow */
+  opacity: 1; /* Always visible */
+}
+
+/* Code block header styling */
 .code-block-header {
   display: flex;
   justify-content: space-between;
@@ -190,7 +199,7 @@
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   font-size: 0.75rem;
-  transition: background-color 0.2s;
+  /* No transition for opacity */
 }
 
 .copy-button:hover {

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import CodeBlock from "./CodeBlock";
 
 // Models configuration
 const AI_MODELS = [
@@ -112,7 +113,7 @@ const AIChat = ({ projectName }) => {
 
       const data = await response.json();
       const aiResponse = formatAIResponse(data.response, selectedModel.id);
-
+      // console.log(data)
       setMessages((prev) => [
         ...prev,
         {
@@ -143,25 +144,39 @@ const AIChat = ({ projectName }) => {
   const formatAIResponse = (text, modelId) => {
     // Format deepseek model responses with <think> tags
     if (modelId === "reasoning" && text.includes("<think>")) {
-      text = text.replace(/<think>([\s\S]*?)<\/think>/g, 
-        `<div class="bg-gray-100 p-3 rounded-md border-l-4 border-amber-500 my-2">
-          <strong>Thinking:</strong> $1
-        </div>`);
+      text = text.replace(/<think>[\s\S]*?<\/think>/g, 
+        `<div class="thinking-block">
+          <strong>Thinking:</strong>
+        </div>`); 
     }
+    
+    // Format links with our special format [[link:URL:TEXT]]
+    // Format links with our special format [[link:URL:TEXT]]
+    text = text.replace(/LINK\[(https?:\/\/[^|]+)\|([^\]]+)\]/g, '[$2]($1)');
+    
     return text;
   };
 
   const createSystemPrompt = (modelId, projectName) => {
+    const linkInstructions = `
+      When you want to include links in your response, use this exact format: 
+      LINK[URL|TEXT]
+      For example: LINK[https://example.com|Example Website] will be displayed as a clickable link.
+      Always include the full URL with protocol (https:// or http://).
+    `;
+
     if (modelId === "research") {
       return `You are an AI research assistant helping with the project "${projectName}". 
               Provide accurate, well-researched information based on reliable sources.
               Format your responses with markdown for readability.
-              Clearly indicate when you are speculating or uncertain.`;
+              Clearly indicate when you are speculating or uncertain.
+              ${linkInstructions}`;
     } else {
       return `You are an AI reasoning assistant specialized in coding and mathematical problem-solving for the project "${projectName}".
               Show your work step-by-step using <think></think> tags when solving complex problems.
               Format code examples with appropriate markdown syntax.
-              Be precise and logical in your explanations.`;
+              Be precise and logical in your explanations.
+              ${linkInstructions}`;
     }
   };
 
@@ -183,20 +198,22 @@ const AIChat = ({ projectName }) => {
     code({ node, inline, className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || '');
       return !inline && match ? (
-        <SyntaxHighlighter
-          style={atomDark}
-          language={match[1]}
-          PreTag="div"
-          {...props}
-        >
-          {String(children).replace(/\n$/, '')}
-        </SyntaxHighlighter>
+        <CodeBlock language={match[1]} value={String(children).replace(/\n$/, '')} />
       ) : (
         <code className={`bg-gray-100 rounded px-1 py-0.5 text-gray-800 ${className}`} {...props}>
           {children}
         </code>
       );
     },
+    // Custom link component for styled links
+    a: ({ node, ...props }) => (
+      <a 
+        className="text-blue-600 underline hover:text-blue-800" 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        {...props} 
+      />
+    ),
     // Add more custom components for other markdown elements if needed
     h1: ({ node, ...props }) => <h1 className="text-2xl font-bold mt-4 mb-2" {...props} />,
     h2: ({ node, ...props }) => <h2 className="text-xl font-bold mt-3 mb-2" {...props} />,
@@ -394,4 +411,4 @@ const AIChat = ({ projectName }) => {
   );
 };
 
-export default AIChat;
+export default AIChat;  
