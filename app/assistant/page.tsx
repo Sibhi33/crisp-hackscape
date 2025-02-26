@@ -11,7 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Navbar } from '@/components/Navbar';
 import FormattedAnalysisCard from '@/components/FormatttedCard';
-import { analyzeIdea, ApiResponse } from '@/api/analysisApi';
+import { analyzeIdea, ApiResponse } from '@/app/api/analysisApi';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
