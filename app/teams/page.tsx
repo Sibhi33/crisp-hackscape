@@ -1,14 +1,23 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 
-const TeamsPage = () => {
+interface Team {
+  id: string;
+  team_name: string;
+  project?: {
+    PS: string;
+    PSdescription: string;
+  };
+}
+
+const TeamsPage: React.FC = () => {
   const { user } = useAuth();
   const router = useRouter();
-  const [teams, setTeams] = useState([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,7 +37,7 @@ const TeamsPage = () => {
       }
 
       // Extract an array of team IDs from membership data
-      const memberTeamIds = membershipData.map((m) => m.team_id);
+      const memberTeamIds = membershipData.map((m: { team_id: string }) => m.team_id);
 
       // Build the filter for teams:
       // - Teams created by the user OR teams where the user is a member

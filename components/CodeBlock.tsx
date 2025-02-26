@@ -2,7 +2,12 @@ import React, { useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-const CodeBlock = ({ language, value }) => {
+interface CodeBlockProps {
+  language: string;
+  value: string;
+}
+
+const CodeBlock: React.FC<CodeBlockProps> = ({ language, value }) => {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
