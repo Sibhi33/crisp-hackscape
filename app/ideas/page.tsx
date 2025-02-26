@@ -12,17 +12,22 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
+import TeamCreationModal from "@/components/TeamCreation";
 
 const IdeasPage = () => {
   const { user } = useAuth();
   const [projects, setProjects] = useState<any[]>([]);
+  const [teams, setTeams] = useState<any[]>([]);
   const router = useRouter();
 
-  // Modal state for share and delete actions
+  // Existing modal states
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // New modal state for team creation
+  const [teamModalProject, setTeamModalProject] = useState<any>(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -42,6 +47,26 @@ const IdeasPage = () => {
 
     fetchProjects();
   }, [user]);
+
+  // Fetch teams for the projects so we know which ones already have a team
+  useEffect(() => {
+    const fetchTeams = async () => {
+      if (projects.length > 0) {
+        const projectIds = projects.map((p) => p.id);
+        const { data, error } = await supabase
+          .from("teams")
+          .select("*")
+          .in("project_id", projectIds);
+        if (error) {
+          console.error("Error fetching teams:", error);
+        } else {
+          setTeams(data || []);
+        }
+      }
+    };
+
+    fetchTeams();
+  }, [projects]);
 
   const handleCardClick = (id: number) => {
     router.push(`/ideas/${id}`);
@@ -89,6 +114,22 @@ const IdeasPage = () => {
     }
   };
 
+  // Open team creation modal
+  const handleOpenTeamModal = (project: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setTeamModalProject(project);
+  };
+
+  // Navigate to the team's page using the team id from the profiles table
+  const handleGoToTeam = (team: any) => {
+    router.push(`/teams/${team.id}`);
+  };
+
+  // When a team is created, update local state so the "Create Team" button is no longer shown
+  const handleTeamCreated = (newTeam: any) => {
+    setTeams((prev) => [...prev, newTeam]);
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -105,10 +146,7 @@ const IdeasPage = () => {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold text-gray-800">My Projects</h1>
-          <Button
-            onClick={() => router.push("/new-project")}
-            
-          >
+          <Button onClick={() => router.push("/new-project")}>
             + New Project
           </Button>
         </div>
@@ -118,40 +156,69 @@ const IdeasPage = () => {
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {projects.map((project) => (
-              <Card
-                key={project.id}
-                className="cursor-pointer transform hover:scale-105 transition duration-300 shadow-lg hover:shadow-2xl"
-                onClick={() => handleCardClick(project.id)}
-              >
-                <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-4 rounded-t">
-                  <CardTitle className="text-xl font-semibold">
-                    {project.PS}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 bg-white">
-                  <p className="text-sm text-gray-600">
-                    {new Date(project.createdat).toLocaleString()}
-                  </p>
-                  <div className="mt-4 flex justify-between">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={(e) => handleShare(project, e)}
-                    >
-                      Share
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={(e) => handleDeleteClick(project, e)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {projects.map((project) => {
+              // Check if a team already exists for this project
+              const teamForProject = teams.find(
+                (team) => team.project_id === project.id
+              );
+              return (
+                <Card
+                  key={project.id}
+                  className="cursor-pointer transform hover:scale-105 transition duration-300 shadow-lg hover:shadow-2xl"
+                  onClick={() => handleCardClick(project.id)}
+                >
+                  <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-4 rounded-t">
+                    <CardTitle className="text-xl font-semibold">
+                      {project.PS}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 bg-white">
+                    <p className="text-sm text-gray-600">
+                      {new Date(project.createdat).toLocaleString()}
+                    </p>
+                    <div className="mt-4 flex justify-between">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={(e) => handleShare(project, e)}
+                      >
+                        Share
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={(e) => handleDeleteClick(project, e)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                    {teamForProject ? (
+  <div className="mt-4">
+    <Button
+      onClick={(e) => {
+        e.stopPropagation();
+        handleGoToTeam(teamForProject);
+      }}
+      className="w-full"
+    >
+      Go to Team
+    </Button>
+  </div>
+) : (
+  <div className="mt-4">
+    <Button
+      onClick={(e) => handleOpenTeamModal(project, e)}
+      className="w-full"
+    >
+      Create Team
+    </Button>
+  </div>
+)}
+
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
@@ -160,7 +227,9 @@ const IdeasPage = () => {
       {showShareModal && selectedProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-6 w-80">
-            <h2 className="text-xl font-semibold mb-4 text-black">Share Project</h2>
+            <h2 className="text-xl font-semibold mb-4 text-black">
+              Share Project
+            </h2>
             <input
               type="text"
               readOnly
@@ -210,6 +279,15 @@ const IdeasPage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Team Creation Modal */}
+      {teamModalProject && (
+        <TeamCreationModal
+          project={teamModalProject}
+          onClose={() => setTeamModalProject(null)}
+          onTeamCreated={handleTeamCreated}
+        />
       )}
     </div>
   );
