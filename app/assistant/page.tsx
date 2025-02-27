@@ -1,15 +1,9 @@
-'use client';
+"use client";
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { AlertCircle } from 'lucide-react';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,6 +14,7 @@ import FormattedAnalysisCard from '@/components/FormatttedCard';
 import { analyzeIdea, ApiResponse } from '@/app/api/analysisApi';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { WavyBackground } from '@/components/ui/wavy-background';
 
 const GroqStepperPage = () => {
   const [step, setStep] = useState(0);
@@ -52,16 +47,16 @@ const GroqStepperPage = () => {
 
       // Insert into Supabase if user is logged in
       if (user) {
-        const { error: insertError } = await supabase.from('projects').insert({
-          user: user.id,
-          PS: problemStatement,
-          PSdescription: description,
-          // If you also want to include 'tracks', you could do something like:
-          // PSotherdetails: `Tracks: ${tracks}, Other: ${otherDetails}`
-          PSotherdetails: otherDetails,
-          APIresponse: JSON.stringify(result),
-          createdat: new Date().toISOString(),
-        });
+        const { error: insertError } = await supabase
+          .from('projects')
+          .insert({
+            user: user.id,
+            PS: problemStatement,
+            PSdescription: description,
+            PSotherdetails: otherDetails,
+            APIresponse: JSON.stringify(result),
+            createdat: new Date().toISOString(),
+          });
 
         if (insertError) {
           console.error('Supabase insert error:', insertError);
@@ -70,9 +65,7 @@ const GroqStepperPage = () => {
         console.error('User not logged in, cannot save project');
       }
     } catch (err) {
-      setError(
-        'An error occurred while analyzing your submission. Please try again.'
-      );
+      setError('An error occurred while analyzing your submission. Please try again.');
       console.error('API Error:', err);
     } finally {
       setLoading(false);
@@ -119,9 +112,7 @@ const GroqStepperPage = () => {
       case 3:
         return (
           <div className="space-y-4">
-            <label className="text-sm font-medium">
-              Other Relevant Details
-            </label>
+            <label className="text-sm font-medium">Other Relevant Details</label>
             <Textarea
               value={otherDetails}
               onChange={(e) => setOtherDetails(e.target.value)}
@@ -141,12 +132,14 @@ const GroqStepperPage = () => {
         {Object.entries(apiResult || {}).map(([key, value]) => (
           <FormattedAnalysisCard
             key={key}
-            title={key
-              .replace(/([A-Z])/g, ' $1')
-              .trim()
-              .split(' ')
-              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(' ')}
+            title={
+              key
+                .replace(/([A-Z])/g, ' $1')
+                .trim()
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ')
+            }
             content={value}
           />
         ))}
@@ -167,72 +160,84 @@ const GroqStepperPage = () => {
   return (
     <>
       <Navbar />
-      <div className="max-w-4xl mx-auto p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Idea Analysis Form</CardTitle>
-            <CardDescription>
-              Submit your idea for comprehensive analysis and feedback
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-8">
-              <Progress value={progress} className="h-2" />
-              <div className="mt-2 text-sm text-gray-500">
-                Step {step + 1} of {totalSteps}
-              </div>
-            </div>
-            {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
-                <p className="text-gray-500">Analyzing your submission...</p>
-              </div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                {apiResult ? (
-                  renderAnalysisResults()
-                ) : (
-                  <div>
-                    {renderStepContent()}
-                    <div className="mt-6 flex justify-between">
-                      {step > 0 && (
-                        <Button
-                          variant="outline"
-                          onClick={() => setStep(step - 1)}
-                        >
-                          Previous
-                        </Button>
-                      )}
-                      {step < totalSteps - 1 ? (
-                        <Button onClick={() => setStep(step + 1)}>Next</Button>
-                      ) : (
-                        <Button
-                          onClick={handleSubmit}
-                          disabled={
-                            !problemStatement || !description || !tracks
-                          }
-                        >
-                          Analyze Idea
-                        </Button>
-                      )}
-                    </div>
+      <div className="relative min-h-screen">
+        <WavyBackground />
+        <div className="absolute inset-0 flex items-center justify-center z-10">
+          <div className="max-w-4xl mx-auto p-6">
+            <Card className="glassmorphism">
+              <CardHeader>
+                <CardTitle>Idea Analysis Form</CardTitle>
+                <CardDescription>
+                  Submit your idea for comprehensive analysis and feedback
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-8">
+                  <Progress value={progress} className="h-2" />
+                  <div className="mt-2 text-sm text-gray-500">
+                    Step {step + 1} of {totalSteps}
                   </div>
+                </div>
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+                    <p className="text-white-500">Analyzing your submission...</p>
+                  </div>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {apiResult ? (
+                      renderAnalysisResults()
+                    ) : (
+                      <div>
+                        {renderStepContent()}
+                        <div className="mt-6 flex justify-between">
+                          {step > 0 && (
+                            <Button variant="outline" onClick={() => setStep(step - 1)}>
+                              Previous
+                            </Button>
+                          )}
+                          {step < totalSteps - 1 ? (
+                            <Button onClick={() => setStep(step + 1)}>
+                              Next
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={handleSubmit}
+                              disabled={!problemStatement || !description || !tracks}
+                            >
+                              Analyze Idea
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
                 )}
-              </motion.div>
-            )}
-            {error && (
-              <Alert variant="destructive" className="mt-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
+                {error && (
+                  <Alert variant="destructive" className="mt-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
+      <style jsx>{`
+        .glassmorphism {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+      `}</style>
     </>
   );
 };
