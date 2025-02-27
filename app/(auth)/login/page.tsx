@@ -130,10 +130,9 @@ const Login = () => {
             <button
               onClick={signInWithApple}
               className="w-full flex items-center justify-center space-x-2 p-3 rounded-lg border border-white/20 hover:bg-white/5 transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24px" height="24px">
-                <path d="M16.365 1.43c-.93.06-2.07.64-2.74 1.39-.6.67-1.1 1.72-.9 2.72.97.08 2.03-.5 2.68-1.28.62-.73 1.08-1.78.96-2.83zM12.02 6.8c-1.5 0-2.8.87-3.54.87-.77 0-1.97-.83-3.25-.81-1.67.03-3.2.97-4.06 2.47-1.73 3.02-.44 7.5 1.23 9.96.82 1.2 1.8 2.55 3.1 2.5 1.24-.05 1.72-.8 3.23-.8 1.5 0 1.93.8 3.25.78 1.35-.02 2.2-1.2 3.02-2.4.84-1.23 1.18-1.85 1.85-3.24-4.88-1.85-5.67-8.7-.88-10.53-.68-.9-1.74-1.5-2.95-1.5z"/>
-              </svg>
+            ><div className='text-4xl'>
+              <p>‮</p>
+              </div>
               <span>Continue with Apple</span>
             </button>
           </div>
