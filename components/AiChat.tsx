@@ -1,5 +1,6 @@
 'use client';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import CodeBlock from './CodeBlock';
@@ -11,6 +12,7 @@ interface AIChatProps {
   fullScreen?: boolean;
   message?: string;
   onMessageProcessed?: () => void;
+  teamId: string; // Add teamId prop
 }
 
 interface Message {
@@ -20,6 +22,7 @@ interface Message {
   timestamp: Date;
   model?: string;
   sender_id?: string;
+  sender_name?: string;
   avatar_url?: string;
 }
 
@@ -54,7 +57,8 @@ const AIChat: React.FC<AIChatProps> = ({
   darkMode = false, 
   fullScreen = false,
   message = '',
-  onMessageProcessed
+  onMessageProcessed,
+  teamId,
 }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -65,6 +69,7 @@ const AIChat: React.FC<AIChatProps> = ({
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const modelSelectorRef = useRef<HTMLDivElement>(null);
   const [showChipsInfo, setShowChipsInfo] = useState(false);
+  const realtimeSubscriptionRef = useRef<any>(null);
   
   // Theme-based styles
   const themeStyles = {
@@ -102,6 +107,168 @@ const AIChat: React.FC<AIChatProps> = ({
     }
   }, [message]);
 
+  // Fetch previous messages
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!teamId) return;
+
+      const { data, error } = await supabase
+        .from('ai_messages')
+        .select(`
+          id,
+          user_message,
+          ai_message,
+          created_at,
+          sender_id,
+          profiles:sender_id (
+            display_name,
+            email,
+            avatar_url
+          )
+        `)
+        .eq('team_id', teamId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching messages:', error);
+        return;
+      }
+
+      if (data) {
+        const formattedMessages: Message[] = [];
+        data.forEach(msg => {
+          // Add user message
+          if (msg.user_message) {
+            formattedMessages.push({
+              id: `${msg.id}-user`,
+              text: msg.user_message,
+              sender: 'You',
+              sender_id: msg.sender_id,
+              sender_name: msg.profiles?.display_name || msg.profiles?.email || 'Unknown',
+              timestamp: new Date(msg.created_at),
+              avatar_url: msg.profiles?.avatar_url
+            });
+          }
+          // Add AI message
+          if (msg.ai_message) {
+            formattedMessages.push({
+              id: `${msg.id}-ai`,
+              text: msg.ai_message,
+              sender: 'AI Assistant',
+              timestamp: new Date(msg.created_at),
+              model: 'research'
+            });
+          }
+        });
+        setMessages(formattedMessages);
+      }
+    };
+
+    fetchMessages();
+    
+    // Set up realtime subscription
+    setupRealtimeSubscription();
+    
+    // Cleanup function to remove subscription
+    return () => {
+      if (realtimeSubscriptionRef.current) {
+        supabase.removeChannel(realtimeSubscriptionRef.current);
+      }
+    };
+  }, [teamId]);
+  
+  // Setup realtime subscription
+  const setupRealtimeSubscription = async () => {
+    if (!teamId) return;
+    
+    // Remove existing subscription if it exists
+    if (realtimeSubscriptionRef.current) {
+      supabase.removeChannel(realtimeSubscriptionRef.current);
+    }
+    
+    // Create new subscription
+    const channel = supabase
+      .channel(`ai_messages_${teamId}`)
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'ai_messages',
+          filter: `team_id=eq.${teamId}`
+        }, 
+        async (payload) => {
+          // When a new message is inserted, fetch the full record including profile
+          const { data, error } = await supabase
+            .from('ai_messages')
+            .select(`
+              id,
+              user_message,
+              ai_message,
+              created_at,
+              sender_id,
+              profiles:sender_id (
+                display_name,
+                email,
+                avatar_url
+              )
+            `)
+            .eq('id', payload.new.id)
+            .single();
+            
+          if (error) {
+            console.error('Error fetching new message details:', error);
+            return;
+          }
+          
+          if (data) {
+            // Skip if both messages from this user (to avoid duplicates from local state updates)
+            const isFromCurrentUser = data.sender_id === user?.id;
+            
+            // Check if messages already exist in the state (to avoid duplicates)
+            const userMsgExists = messages.some(msg => msg.id === `${data.id}-user`);
+            const aiMsgExists = messages.some(msg => msg.id === `${data.id}-ai`);
+            
+            // Only update state if we're seeing messages from other users
+            // or if we somehow missed adding our own messages to the local state
+            if (!isFromCurrentUser || !userMsgExists || !aiMsgExists) {
+              const newMessages: Message[] = [];
+              
+              // Add user message
+              if (data.user_message && !userMsgExists) {
+                newMessages.push({
+                  id: `${data.id}-user`,
+                  text: data.user_message,
+                  sender: data.sender_id === user?.id ? 'You' : (data.profiles?.display_name || 'Team member'),
+                  sender_id: data.sender_id,
+                  sender_name: data.profiles?.display_name || data.profiles?.email || 'Unknown',
+                  timestamp: new Date(data.created_at),
+                  avatar_url: data.profiles?.avatar_url
+                });
+              }
+              
+              // Add AI message
+              if (data.ai_message && !aiMsgExists) {
+                newMessages.push({
+                  id: `${data.id}-ai`,
+                  text: data.ai_message,
+                  sender: 'AI Assistant',
+                  timestamp: new Date(data.created_at),
+                  model: 'research'
+                });
+              }
+              
+              if (newMessages.length > 0) {
+                setMessages(prevMessages => [...prevMessages, ...newMessages]);
+              }
+            }
+          }
+        }
+      )
+      .subscribe();
+      
+    realtimeSubscriptionRef.current = channel;
+  };
+
   // Handle message sent from the team chat via /chips command
   const handleExternalMessage = async (text: string) => {
     if (!text.trim()) return;
@@ -109,9 +276,10 @@ const AIChat: React.FC<AIChatProps> = ({
     const userMessage: Message = {
       id: Date.now(),
       text: text,
-      sender: 'You',
+      sender: user?.display_name || "You",  // use display name or "User"
       sender_id: user?.id,
-      timestamp: new Date()
+      sender_name: user?.display_name || "You",  // remove email fallback
+      timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -206,15 +374,17 @@ const AIChat: React.FC<AIChatProps> = ({
   }, []);
 
   const sendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+    e?.preventDefault();
     if (!inputValue.trim()) return;
 
     const userMessage: Message = {
       id: Date.now(),
       text: inputValue,
-      sender: 'You',
+      sender: user?.display_name || "You",  // use display name only
       sender_id: user?.id,
-      timestamp: new Date()
+      sender_name: user?.display_name || "You",  // remove email fallback
+      timestamp: new Date(),
+      avatar_url: user?.avatar_url || ''
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -250,6 +420,21 @@ const AIChat: React.FC<AIChatProps> = ({
 
       const data = await response.json();
       const aiResponse = formatAIResponse(data.response, selectedModel.id);
+
+      // Save both messages to the database
+      const { error: dbError } = await supabase
+        .from('ai_messages')
+        .insert({
+          team_id: teamId,
+          user_message: inputValue,
+          ai_message: aiResponse,
+          sender_id: user?.id,
+        });
+
+      if (dbError) {
+        console.error('Error saving messages:', dbError);
+      }
+
       setMessages((prev) => [
         ...prev,
         {
@@ -287,8 +472,7 @@ const AIChat: React.FC<AIChatProps> = ({
           const thinkContent = match.replace(/<think>|<\/think>/g, '');
           return `<div class="thinking-block p-3 my-2 border-l-4 border-indigo-500 bg-opacity-20 ${darkMode ? 'bg-indigo-900' : 'bg-indigo-50'}">
             <strong>Thinking:</strong>
-            <div class="pl-2 mt-1">${thinkContent}</div>
-          </div>`;
+            <div class="pl-2 mt-1">${thinkContent}</div>`;
         }
       );
     }
@@ -308,13 +492,13 @@ const AIChat: React.FC<AIChatProps> = ({
     `;
 
     if (modelId === 'research') {
-      return `You are an AI research assistant helping with the project "${projectName}". 
+      return `You are "CHIPS" also known as "Collaborative Hackathon Intelligence with Project Support" an AI research assistant helping with the project "${projectName}". 
               Provide accurate, well-researched information based on reliable sources.
               Format your responses with markdown for readability.
               Clearly indicate when you are speculating or uncertain.
               ${linkInstructions}`;
     } else {
-      return `You are an AI reasoning assistant specialized in coding and mathematical problem-solving for the project "${projectName}".
+      return `You are  "CHIPS" also known as "Collaborative Hackathon Intelligence with Project Support" an AI reasoning assistant specialized in coding and mathematical problem-solving for the project "${projectName}".
               Show your work step-by-step using <think></think> tags when solving complex problems.
               Format code examples with appropriate markdown syntax.
               Be precise and logical in your explanations.
@@ -519,7 +703,6 @@ const AIChat: React.FC<AIChatProps> = ({
           </div>
         </div>
       )}
-
       {/* Messages */}
       <div
         ref={chatContainerRef}
@@ -586,14 +769,13 @@ const AIChat: React.FC<AIChatProps> = ({
                   <div className="text-sm">{msg.text}</div>
                 )}
 
-                <div
-                  className={`text-xs mt-2 ${
-                    msg.sender === 'AI Assistant'
-                      ? (darkMode ? 'text-gray-400' : 'text-gray-500')
-                      : 'text-blue-200'
-                  }`}
-                >
-                  {formatTime(new Date(msg.timestamp))}
+                <div className={`flex items-center justify-between text-xs mt-2 ${
+                  msg.sender === 'AI Assistant'
+                    ? (darkMode ? 'text-gray-400' : 'text-gray-500')
+                    : 'text-blue-200'
+                }`}>
+                  <span>{msg.sender_name || msg.sender}</span>
+                  <span>{formatTime(new Date(msg.timestamp))}</span>
                 </div>
               </div>
             </div>

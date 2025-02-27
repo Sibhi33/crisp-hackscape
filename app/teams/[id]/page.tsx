@@ -626,6 +626,7 @@ const TeamPage: React.FC = () => {
   fullScreen={true}
   message={aiMessage}
   onMessageProcessed={() => setAiMessage("")}
+  teamId={id} // Add this line
 />
         </div>
       </div>
