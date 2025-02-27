@@ -614,52 +614,19 @@ const TeamPage: React.FC = () => {
           className="bg-gray-900 text-white flex flex-col flex-1"
           style={{ width: `${100 - leftPanelWidth}%` }}
         >
-          <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-            <div className="flex items-center">
-              <span className="text-lg font-semibold text-white">CHIPS</span>
-              <button 
-                className="ml-2 p-1 rounded-full text-gray-400 hover:text-white hover:bg-gray-700"
-                onClick={() => setShowChipsInfo(!showChipsInfo)}
-                aria-label="CHIPS Information"
-              >
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  className="h-5 w-5" 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
           
-          {/* CHIPS Info Tooltip */}
-          {showChipsInfo && (
-            <div className="p-4 bg-gray-800 border-b border-gray-700">
-              <h3 className="font-semibold text-white mb-2">CHIPS: Collaborative Hackathon Intelligence with Project Support</h3>
-              <p className="text-gray-300 text-sm">
-                CHIPS is your AI assistant designed to help hackathon teams collaborate more effectively. 
-                It can provide project guidance, answer technical questions, help brainstorm ideas, 
-                and support your team throughout the hackathon process.
-              </p>
-            </div>
-          )}
+          
+          
           
           {/* AI Chat with updated props */}
+          
           <AIChat 
-            projectName={team.project?.PS || team.team_name} 
-            darkMode={true}
-            fullScreen={true}
-            message={aiMessage}
-            onMessageProcessed={() => setAiMessage("")}
-          />
+  projectName={team.project?.PS || team.team_name} 
+  darkMode={true}
+  fullScreen={true}
+  message={aiMessage}
+  onMessageProcessed={() => setAiMessage("")}
+/>
         </div>
       </div>
 
