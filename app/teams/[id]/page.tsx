@@ -49,18 +49,27 @@ const TeamPage: React.FC = () => {
   const [teamChatInput, setTeamChatInput] = useState<string>("");
   const teamChatRef = useRef<HTMLDivElement>(null);
   const [subscription, setSubscription] = useState<any>(null);
-
-  // AI chat state
-  const [aiMessages, setAiMessages] = useState<Message[]>([]);
-  const [aiChatInput, setAiChatInput] = useState<string>("");
-  const [aiIsTyping, setAiIsTyping] = useState<boolean>(false);
-  const aiChatRef = useRef<HTMLDivElement>(null);
+  
+  // Message for AI chat
+  const [aiMessage, setAiMessage] = useState<string>("");
+  
+  // Scroll control states
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  const [showScrollDown, setShowScrollDown] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   // Team members
   const [teamMembers, setTeamMembers] = useState<User[]>([]);
 
-  // NEW: Modal for inviting a single new member
+  // Modal for inviting a single new member
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  
+  // Resizable panel state
+  const [leftPanelWidth, setLeftPanelWidth] = useState(50); // percent
+  const [isDragging, setIsDragging] = useState(false);
+  
+  // CHIPS info tooltip state
+  const [showChipsInfo, setShowChipsInfo] = useState(false);
 
   // Fetch team details (including project)
   useEffect(() => {
@@ -126,6 +135,27 @@ const TeamPage: React.FC = () => {
     fetchTeamMembers(); // Refresh
   };
 
+  // Check if user is at bottom of chat
+  const checkIfUserAtBottom = () => {
+    const chatContainer = teamChatRef.current;
+    if (!chatContainer) return true;
+    
+    // Consider user at bottom if within 100px of the bottom
+    return (
+      chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 100
+    );
+  };
+
+  // Function to scroll to bottom
+  const scrollToBottom = (smooth = false) => {
+    if (teamChatRef.current) {
+      teamChatRef.current.scrollTo({
+        top: teamChatRef.current.scrollHeight,
+        behavior: smooth ? "smooth" : "auto"
+      });
+    }
+  };
+
   // Fetch team messages from the database
   useEffect(() => {
     const fetchTeamMessages = async () => {
@@ -151,6 +181,12 @@ const TeamPage: React.FC = () => {
           avatar_url: msg.sender?.avatar_url || "",
         }));
         setTeamMessages(messages);
+        
+        // After initial messages are loaded, scroll to bottom
+        setTimeout(() => {
+          scrollToBottom();
+          setInitialLoadComplete(true);
+        }, 100);
       }
 
       // Set up real-time subscription
@@ -185,7 +221,18 @@ const TeamPage: React.FC = () => {
               avatar_url: senderData?.avatar_url || "",
             };
 
+            // Check if user is at bottom before adding new message
+            const wasAtBottom = checkIfUserAtBottom();
+            
             setTeamMessages((prev) => [...prev, newMessage]);
+            
+            // Only scroll if user was already at bottom when message arrived
+            if (wasAtBottom) {
+              setTimeout(() => scrollToBottom(), 100);
+            } else {
+              // Show scroll-down button if not at bottom
+              setShowScrollDown(true);
+            }
           }
         )
         .subscribe();
@@ -201,83 +248,94 @@ const TeamPage: React.FC = () => {
     };
 
     fetchTeamMessages();
-  }, [id, subscription]);
+  }, [id]);  // Remove subscription dependency to prevent re-fetching
 
-  // Scroll to bottom when team messages update
+  // Add scroll event listener to determine scroll position
   useEffect(() => {
-    if (teamChatRef.current) {
-      teamChatRef.current.scrollTop = teamChatRef.current.scrollHeight;
-    }
-  }, [teamMessages]);
+    const chatContainer = teamChatRef.current;
+    if (!chatContainer) return;
+    
+    const handleScroll = () => {
+      const isAtBottom = checkIfUserAtBottom();
+      setIsNearBottom(isAtBottom);
+      setShowScrollDown(!isAtBottom && teamMessages.length > 0);
+    };
+    
+    chatContainer.addEventListener('scroll', handleScroll);
+    return () => chatContainer.removeEventListener('scroll', handleScroll);
+  }, [teamMessages.length]);
 
-  // Scroll to bottom when AI messages update
+  // Handle scroll to bottom button click
+  const handleScrollToBottom = () => {
+    scrollToBottom(true); // Use smooth scrolling for button click
+    setShowScrollDown(false);
+    setIsNearBottom(true);
+  };
+
+  // Effect for resizable panels
   useEffect(() => {
-    if (aiChatRef.current) {
-      aiChatRef.current.scrollTop = aiChatRef.current.scrollHeight;
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      
+      const containerWidth = window.innerWidth;
+      const newLeftWidth = (e.clientX / containerWidth) * 100;
+      
+      // Limit resizing to reasonable bounds (15% - 85%)
+      if (newLeftWidth > 15 && newLeftWidth < 85) {
+        setLeftPanelWidth(newLeftWidth);
+      }
+    };
+    
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+    
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
     }
-  }, [aiMessages]);
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
 
   const handleTeamChatSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!teamChatInput.trim()) return;
-
-    // Only send to the database, the subscription will handle UI update
-    const { error } = await supabase
-      .from("team_messages")
-      .insert([
-        {
-          team_id: id,
-          message: teamChatInput, 
-          sender_id: user?.id,
-        },
-      ]);
-
-    if (error) {
-      console.error("Error sending message:", error);
+    
+    // Check if input starts with "/chips"
+    if (teamChatInput.startsWith("/chips")) {
+      // Extract the message after "/chips"
+      const chipsMessage = teamChatInput.substring(6).trim();
+      
+      if (chipsMessage) {
+        // Set the AI message to send to the AIChat component
+        setAiMessage(chipsMessage);
+        
+        // Reset input without sending to team chat
+        setTeamChatInput("");
+      }
     } else {
-      setTeamChatInput("");
+      // Regular message - send to team chat
+      const { error } = await supabase
+        .from("team_messages")
+        .insert([
+          {
+            team_id: id,
+            message: teamChatInput, 
+            sender_id: user?.id,
+          },
+        ]);
+
+      if (error) {
+        console.error("Error sending message:", error);
+      } else {
+        setTeamChatInput("");
+        // We don't need to force scroll here, the realtime subscription will handle it
+      }
     }
-  };
-
-  const handleAiChatSend = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!aiChatInput.trim()) return;
-
-    const userMessage: Message = {
-      id: Date.now(),
-      text: aiChatInput,
-      sender: "You",
-      sender_id: user?.id,
-      timestamp: new Date(),
-      avatar_url: user?.avatar_url || "",
-    };
-
-    setAiMessages((prev) => [...prev, userMessage]);
-    setAiChatInput("");
-
-    setAiIsTyping(true);
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: Date.now() + 1,
-        text: getAIResponse(aiChatInput),
-        sender: "AI Assistant",
-        timestamp: new Date(),
-        avatar_url: "",
-      };
-      setAiMessages((prev) => [...prev, aiResponse]);
-      setAiIsTyping(false);
-    }, 1500);
-  };
-
-  // Mock AI response function
-  const getAIResponse = (input: string): string => {
-    const responses = [
-      `I've analyzed ${team?.project?.PS || "your project"} and I think your question about "${input}" is very insightful.`,
-      `For "${input}", I'd suggest considering further improvements.`,
-      `Great point about "${input}". Let's explore that further.`,
-      `Regarding "${input}", iterative testing might be the key.`,
-    ];
-    return responses[Math.floor(Math.random() * responses.length)];
   };
 
   const formatTime = (date: Date): string => {
@@ -305,7 +363,7 @@ const TeamPage: React.FC = () => {
     );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col h-screen">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -395,16 +453,66 @@ const TeamPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Team Chat (Slack-like) */}
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden flex flex-col h-[calc(100vh-160px)]">
-            <div className="p-4 border-b flex items-center justify-between">
-              <div className="flex items-center">
+      {/* Main Content - Resizable Split Panes */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Team Chat Panel */}
+        <div 
+          className="bg-white overflow-hidden flex flex-col border-r" 
+          style={{ width: `${leftPanelWidth}%` }}
+        >
+          <div className="p-4 border-b flex items-center justify-between">
+            <div className="flex items-center justify-around w-full">
+              <div className="flex items-center w-full justify-start">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-purple-600 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"
+                />
+              </svg>
+              <h2 className="text-lg font-semibold text-gray-900">Team Chat</h2>
+              </div>
+              {/* Scroll to Bottom Button in Header */}
+              {showScrollDown && (
+                <button
+                  onClick={handleScrollToBottom}
+                  className="ml-3 p-1 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+                  aria-label="Scroll to latest messages"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M19 13l-7 7-7-7m14-8l-7 7-7-7" 
+                    />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+          <div 
+            ref={teamChatRef} 
+            className="flex-1 overflow-y-auto p-4 space-y-4 text-gray-800 relative"
+          >
+            {teamMessages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-gray-600">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 text-purple-600 mr-2"
+                  className="h-12 w-12 mb-2 text-gray-600"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -412,139 +520,146 @@ const TeamPage: React.FC = () => {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"
+                    strokeWidth={1.5}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
                   />
                 </svg>
-                <h2 className="text-lg font-semibold text-gray-900">Team Chat</h2>
+                <p>No messages yet. Start the conversation!</p>
               </div>
-              <div className="flex space-x-2">
-                <button className="p-1.5 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+            ) : (
+              teamMessages.map((msg, index) => {
+                const previousMsg = index > 0 ? teamMessages[index - 1] : null;
+                const showHeader = !previousMsg || previousMsg.sender !== msg.sender;
+                
+                return (
+                  <div 
+                    key={msg.id} 
+                    className={`flex ${showHeader ? "mt-4" : "mt-1"}`}
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div ref={teamChatRef} className="flex-1 overflow-y-auto p-4 space-y-4 text-gray-800">
-              {teamMessages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-600">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-12 w-12 mb-2 text-gray-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                    />
-                  </svg>
-                  <p>No messages yet. Start the conversation!</p>
-                </div>
-              ) : (
-                teamMessages.map((msg, index) => {
-                  const previousMsg = index > 0 ? teamMessages[index - 1] : null;
-                  const showHeader = !previousMsg || previousMsg.sender !== msg.sender;
-                  return (
-                    <div key={msg.id} className={`flex ${showHeader ? "mt-4" : "mt-1"}`}>
-                      {showHeader && (
-                        <div className="flex-shrink-0 mr-3">
-                          {msg.avatar_url ? (
-                            <Image
-                              src={msg.avatar_url}
-                              alt={msg.sender}
-                              width={36}
-                              height={36}
-                              className="rounded"
-                            />
-                          ) : (
-                            <div className="flex items-center justify-center h-9 w-9 rounded-full bg-gray-300 text-gray-800">
-                              {msg.sender ? msg.sender.charAt(0).toUpperCase() : ""}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      <div className={`flex-1 ${!showHeader ? "pl-12" : ""}`}>
-                        {showHeader && (
-                          <div className="flex items-baseline">
-                            <span className="font-medium text-gray-900">{msg.sender}</span>
-                            <span className="ml-2 text-xs text-gray-500">
-                              {formatTime(new Date(msg.timestamp))}
-                            </span>
+                    {showHeader && (
+                      <div className="flex-shrink-0 mr-3">
+                        {msg.avatar_url ? (
+                          <Image
+                            src={msg.avatar_url}
+                            alt={msg.sender}
+                            width={36}
+                            height={36}
+                            className="rounded"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-9 w-9 rounded-full bg-gray-300 text-gray-800">
+                            {msg.sender ? msg.sender.charAt(0).toUpperCase() : ""}
                           </div>
                         )}
-                        <div className="mt-1 text-sm text-gray-800">{msg.text}</div>
                       </div>
+                    )}
+                    <div className={`flex-1 ${!showHeader ? "pl-12" : ""}`}>
+                      {showHeader && (
+                        <div className="flex items-baseline">
+                          <span className="font-medium text-gray-900">{msg.sender}</span>
+                          <span className="ml-2 text-xs text-gray-500">
+                            {formatTime(new Date(msg.timestamp))}
+                          </span>
+                        </div>
+                      )}
+                      <div className="mt-1 text-sm text-gray-800">{msg.text}</div>
                     </div>
-                  );
-                })
-              )}
-            </div>
-            <form onSubmit={handleTeamChatSend} className="border-t p-3 bg-gray-50">
-              <div className="flex items-center space-x-2">
-                <button
-                  type="button"
-                  className="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                    />
-                  </svg>
-                </button>
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    value={teamChatInput}
-                    onChange={(e) => setTeamChatInput(e.target.value)}
-                    placeholder="Message team members..."
-                    className="w-full py-2 px-3 rounded-full border border-gray-300 focus:ring-2 focus:ring-blue-300 focus:border-blue-500 focus:outline-none text-gray-900"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={!teamChatInput.trim()}
-                  className={`p-2 rounded-full ${
-                    teamChatInput.trim()
-                      ? "bg-purple-600 text-white hover:bg-purple-700"
-                      : "bg-gray-200 text-gray-400"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
-                </button>
-              </div>
-            </form>
+                  </div>
+                );
+              })
+            )}
           </div>
-
-          {/* AI Chat */}
-          <AIChat projectName={team.project?.PS || team.team_name} />
+          <form onSubmit={handleTeamChatSend} className="border-t p-3 bg-gray-50">
+            <div className="flex items-center space-x-2">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={teamChatInput}
+                  onChange={(e) => setTeamChatInput(e.target.value)}
+                  placeholder="Message team members... (type /chips to send to AI)"
+                  className="w-full py-2 px-3 rounded-full border border-gray-300 focus:ring-2 focus:ring-blue-300 focus:border-blue-500 focus:outline-none text-gray-900"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={!teamChatInput.trim()}
+                className={`p-2 rounded-full ${
+                  teamChatInput.trim()
+                    ? "bg-purple-600 text-white hover:bg-purple-700"
+                    : "bg-gray-200 text-gray-400"
+                }`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              </button>
+            </div>
+          </form>
+        </div>
+        
+        {/* Resizer Handle */}
+        <div 
+          className="w-2 bg-gray-200 hover:bg-blue-400 cursor-col-resize active:bg-blue-600 transition-colors"
+          onMouseDown={() => setIsDragging(true)}
+        />
+        
+        {/* CHIPS (AI Chat) Panel */}
+        <div 
+          className="bg-gray-900 text-white flex flex-col flex-1"
+          style={{ width: `${100 - leftPanelWidth}%` }}
+        >
+          <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+            <div className="flex items-center">
+              <span className="text-lg font-semibold text-white">CHIPS</span>
+              <button 
+                className="ml-2 p-1 rounded-full text-gray-400 hover:text-white hover:bg-gray-700"
+                onClick={() => setShowChipsInfo(!showChipsInfo)}
+                aria-label="CHIPS Information"
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="h-5 w-5" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          {/* CHIPS Info Tooltip */}
+          {showChipsInfo && (
+            <div className="p-4 bg-gray-800 border-b border-gray-700">
+              <h3 className="font-semibold text-white mb-2">CHIPS: Collaborative Hackathon Intelligence with Project Support</h3>
+              <p className="text-gray-300 text-sm">
+                CHIPS is your AI assistant designed to help hackathon teams collaborate more effectively. 
+                It can provide project guidance, answer technical questions, help brainstorm ideas, 
+                and support your team throughout the hackathon process.
+              </p>
+            </div>
+          )}
+          
+          {/* AI Chat with updated props */}
+          <AIChat 
+            projectName={team.project?.PS || team.team_name} 
+            darkMode={true}
+            fullScreen={true}
+            message={aiMessage}
+            onMessageProcessed={() => setAiMessage("")}
+          />
         </div>
       </div>
 
@@ -652,7 +767,9 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
 
       if (profileError || !profileData) {
         throw new Error("Failed to find user profile.");
-      }// After fetching the profile data for the given email:
+      }
+      
+      // After fetching the profile data for the given email:
       const { data: existingMember, error: existingError } = await supabase
       .from("team_members")
       .select("id")
@@ -695,7 +812,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
   };
 
   return (
-    <div className=" text-black fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-300">
+    <div className="text-black fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-300">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
         {/* Error Toast */}
         {error && (
