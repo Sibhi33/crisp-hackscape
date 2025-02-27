@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import React, { useEffect, useState } from "react";
 
 // Move emailRegex outside the component or use useMemo
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
