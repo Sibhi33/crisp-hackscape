@@ -21,8 +21,7 @@ export const Navbar = () => {
               href="/"
               className="text-large font-space font-bold text-electric-blue h-25"
             >
-            crisp
-
+              crisp
             </Link>
             <div className="hidden md:flex space-x-6">
               <Link
@@ -69,7 +68,9 @@ export const Navbar = () => {
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-              <Link href="/ideas"><DropdownMenuItem >Ideas</DropdownMenuItem></Link>
+                <Link href="/ideas">
+                  <DropdownMenuItem>Ideas</DropdownMenuItem>
+                </Link>
                 <DropdownMenuItem onClick={signOut}>Sign Out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

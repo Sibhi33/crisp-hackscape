@@ -1,18 +1,13 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/contexts/AuthContext";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Navbar } from "@/components/Navbar";
-import TeamCreationModal from "@/components/TeamCreation";
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Navbar } from '@/components/Navbar';
+import TeamCreationModal from '@/components/TeamCreation';
 
 const IdeasPage = () => {
   const { user } = useAuth();
@@ -33,12 +28,12 @@ const IdeasPage = () => {
     const fetchProjects = async () => {
       if (user) {
         const { data, error } = await supabase
-          .from("projects")
-          .select("*")
-          .eq("user", user.id)
-          .order("createdat", { ascending: false });
+          .from('projects')
+          .select('*')
+          .eq('user', user.id)
+          .order('createdat', { ascending: false });
         if (error) {
-          console.error("Error fetching projects:", error);
+          console.error('Error fetching projects:', error);
         } else {
           setProjects(data || []);
         }
@@ -54,11 +49,11 @@ const IdeasPage = () => {
       if (projects.length > 0) {
         const projectIds = projects.map((p) => p.id);
         const { data, error } = await supabase
-          .from("teams")
-          .select("*")
-          .in("project_id", projectIds);
+          .from('teams')
+          .select('*')
+          .in('project_id', projectIds);
         if (error) {
-          console.error("Error fetching teams:", error);
+          console.error('Error fetching teams:', error);
         } else {
           setTeams(data || []);
         }
@@ -87,7 +82,7 @@ const IdeasPage = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Failed to copy text:", err);
+      console.error('Failed to copy text:', err);
     }
   };
 
@@ -101,11 +96,11 @@ const IdeasPage = () => {
   // Delete project from Supabase and update state
   const handleDelete = async () => {
     const { error } = await supabase
-      .from("projects")
+      .from('projects')
       .delete()
-      .eq("id", selectedProject.id);
+      .eq('id', selectedProject.id);
     if (error) {
-      console.error("Error deleting project:", error);
+      console.error('Error deleting project:', error);
     } else {
       setProjects((prev) =>
         prev.filter((proj) => proj.id !== selectedProject.id)
@@ -146,7 +141,7 @@ const IdeasPage = () => {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold text-gray-800">My Projects</h1>
-          <Button onClick={() => router.push("/new-project")}>
+          <Button onClick={() => router.push('/new-project')}>
             + New Project
           </Button>
         </div>
@@ -193,28 +188,27 @@ const IdeasPage = () => {
                       </Button>
                     </div>
                     {teamForProject ? (
-  <div className="mt-4">
-    <Button
-      onClick={(e) => {
-        e.stopPropagation();
-        handleGoToTeam(teamForProject);
-      }}
-      className="w-full"
-    >
-      Go to Team
-    </Button>
-  </div>
-) : (
-  <div className="mt-4">
-    <Button
-      onClick={(e) => handleOpenTeamModal(project, e)}
-      className="w-full"
-    >
-      Create Team
-    </Button>
-  </div>
-)}
-
+                      <div className="mt-4">
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleGoToTeam(teamForProject);
+                          }}
+                          className="w-full"
+                        >
+                          Go to Team
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="mt-4">
+                        <Button
+                          onClick={(e) => handleOpenTeamModal(project, e)}
+                          className="w-full"
+                        >
+                          Create Team
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );
@@ -237,7 +231,7 @@ const IdeasPage = () => {
               className="w-full p-2 border rounded mb-4 text-black"
             />
             <Button onClick={handleCopy} className="w-full mb-2">
-              {copied ? "Copied!" : "Copy Link"}
+              {copied ? 'Copied!' : 'Copy Link'}
             </Button>
             <Button
               variant="outline"

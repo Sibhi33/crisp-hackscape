@@ -19,17 +19,18 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, value }) => {
     <div className="code-block rounded-md overflow-hidden">
       <div className="code-block-header">
         <span>{language}</span>
-        <button 
-          onClick={copyToClipboard} 
-          className="copy-button"
-        >
+        <button onClick={copyToClipboard} className="copy-button">
           {copied ? 'Copied!' : 'Copy'}
         </button>
       </div>
       <SyntaxHighlighter
         language={language}
         style={atomDark}
-        customStyle={{ margin: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}
+        customStyle={{
+          margin: 0,
+          borderTopLeftRadius: 0,
+          borderTopRightRadius: 0,
+        }}
       >
         {value}
       </SyntaxHighlighter>

@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
 
 interface Team {
   id: string;
@@ -26,36 +26,38 @@ const TeamsPage: React.FC = () => {
 
       // First, fetch team memberships for the user
       const { data: membershipData, error: membershipError } = await supabase
-        .from("team_members")
-        .select("team_id")
-        .eq("user_id", user.id);
+        .from('team_members')
+        .select('team_id')
+        .eq('user_id', user.id);
 
       if (membershipError) {
-        console.error("Error fetching team memberships:", membershipError);
+        console.error('Error fetching team memberships:', membershipError);
         setLoading(false);
         return;
       }
 
       // Extract an array of team IDs from membership data
-      const memberTeamIds = membershipData.map((m: { team_id: string }) => m.team_id);
+      const memberTeamIds = membershipData.map(
+        (m: { team_id: string }) => m.team_id
+      );
 
       // Build the filter for teams:
       // - Teams created by the user OR teams where the user is a member
-      let filter = "";
+      let filter = '';
       if (memberTeamIds.length > 0) {
-        filter = `created_by.eq.${user.id},id.in.(${memberTeamIds.join(",")})`;
+        filter = `created_by.eq.${user.id},id.in.(${memberTeamIds.join(',')})`;
       } else {
         filter = `created_by.eq.${user.id}`;
       }
 
       // Now, fetch teams using the built filter and join the related project data
       const { data: teamData, error: teamError } = await supabase
-        .from("teams")
-        .select("*, project:projects(PS,PSdescription)")
+        .from('teams')
+        .select('*, project:projects(PS,PSdescription)')
         .or(filter);
 
       if (teamError) {
-        console.error("Error fetching teams:", teamError);
+        console.error('Error fetching teams:', teamError);
       } else {
         setTeams(teamData || []);
       }
@@ -93,9 +95,9 @@ const TeamsPage: React.FC = () => {
             <p className="text-gray-600">
               {team.project?.PSdescription
                 ? team.project.PSdescription.length > 100
-                  ? team.project.PSdescription.substring(0, 100) + "..."
+                  ? team.project.PSdescription.substring(0, 100) + '...'
                   : team.project.PSdescription
-                : "No description provided."}
+                : 'No description provided.'}
             </p>
             <button
               onClick={() => router.push(`/teams/${team.id}`)}

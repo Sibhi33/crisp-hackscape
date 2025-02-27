@@ -3,14 +3,8 @@
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { ParticleBackground } from '@/components/ParticleBackground';
-import {
-  Code,
-  Users,
-  Trophy,
-  ChevronRight,
-} from 'lucide-react';
+import { Code, Users, Trophy, ChevronRight } from 'lucide-react';
 import { Navbar } from './Navbar';
-
 
 const Index = () => {
   return (
@@ -50,8 +44,8 @@ const Index = () => {
               transition={{ duration: 0.7, delay: 0.4 }}
               className="text-xl text-muted-foreground max-w-2xl mx-auto"
             >
-              Connect, create, and collaborate in the most innovative hackathon assistance
-              platform
+              Connect, create, and collaborate in the most innovative hackathon
+              assistance platform
             </motion.p>
           </header>
           <section className="text-center space-y-6">
@@ -156,8 +150,6 @@ const Index = () => {
               </motion.div>
             </div>
           </section> */}
-          
-         
         </motion.div>
       </main>
       {/* CTA Section */}
@@ -292,8 +284,5 @@ const Index = () => {
     </div>
   );
 };
-
-
-
 
 export default Index;

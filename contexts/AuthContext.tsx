@@ -77,7 +77,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const signInWithEmail = async (email: string, password: string): Promise<boolean> => {
+  const signInWithEmail = async (
+    email: string,
+    password: string
+  ): Promise<boolean> => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -136,7 +139,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       toast({
         title: 'Success',
-        description: 'A verification email has been sent. Please check your inbox.',
+        description:
+          'A verification email has been sent. Please check your inbox.',
       });
       return true;
     } catch (error: any) {

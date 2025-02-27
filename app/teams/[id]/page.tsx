@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import AIChat from "@/components/AiChat";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
-import Image from "next/image";
-import { useParams, useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import AIChat from '@/components/AiChat';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import Image from 'next/image';
+import { useParams, useRouter } from 'next/navigation';
+import React, { useEffect, useRef, useState } from 'react';
 
 // TypeScript interfaces
 interface User {
@@ -46,30 +46,42 @@ const TeamPage: React.FC = () => {
 
   // Team chat state
   const [teamMessages, setTeamMessages] = useState<Message[]>([]);
-  const [teamChatInput, setTeamChatInput] = useState<string>("");
+  const [teamChatInput, setTeamChatInput] = useState<string>('');
   const teamChatRef = useRef<HTMLDivElement>(null);
   const [subscription, setSubscription] = useState<any>(null);
 
-  // AI chat state
-  const aiChatRef = useRef<HTMLDivElement>(null);
+  // Message for AI chat
+  const [aiMessage, setAiMessage] = useState<string>('');
+
+  // Scroll control states
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  const [showScrollDown, setShowScrollDown] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   // Team members
   const [teamMembers, setTeamMembers] = useState<User[]>([]);
 
-  // NEW: Modal for inviting a single new member
+  // Modal for inviting a single new member
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+
+  // Resizable panel state
+  const [leftPanelWidth, setLeftPanelWidth] = useState(50); // percent
+  const [isDragging, setIsDragging] = useState(false);
+
+  // CHIPS info tooltip state
+  const [showChipsInfo, setShowChipsInfo] = useState(false);
 
   // Fetch team details (including project)
   useEffect(() => {
     const fetchTeamDetails = async () => {
       if (!id) return;
       const { data, error } = await supabase
-        .from("teams")
-        .select("*, project:projects(PS, PSdescription)")
-        .eq("id", id)
+        .from('teams')
+        .select('*, project:projects(PS, PSdescription)')
+        .eq('id', id)
         .single();
       if (error) {
-        console.error("Error fetching team:", error);
+        console.error('Error fetching team:', error);
       } else {
         setTeam(data);
       }
@@ -84,26 +96,26 @@ const TeamPage: React.FC = () => {
     if (!id) return;
     // Get team_members rows for this team
     const { data: tmData, error: tmError } = await supabase
-      .from("team_members")
-      .select("user_id")
-      .eq("team_id", id);
+      .from('team_members')
+      .select('user_id')
+      .eq('team_id', id);
 
     if (tmError) {
-      console.error("Error fetching team members:", tmError);
+      console.error('Error fetching team members:', tmError);
       return;
     }
     if (tmData && tmData.length > 0) {
       const userIds = tmData.map((tm: any) => tm.user_id);
       // Fetch profiles for these user IDs
       const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, display_name, email, avatar_url")
-        .in("id", userIds);
+        .from('profiles')
+        .select('id, display_name, email, avatar_url')
+        .in('id', userIds);
       if (profilesError) {
-        console.error("Error fetching profiles:", profilesError);
+        console.error('Error fetching profiles:', profilesError);
         return;
       }
-      
+
       setTeamMembers(profilesData);
     } else {
       // No members found
@@ -123,6 +135,30 @@ const TeamPage: React.FC = () => {
     fetchTeamMembers(); // Refresh
   };
 
+  // Check if user is at bottom of chat
+  const checkIfUserAtBottom = () => {
+    const chatContainer = teamChatRef.current;
+    if (!chatContainer) return true;
+
+    // Consider user at bottom if within 100px of the bottom
+    return (
+      chatContainer.scrollHeight -
+        chatContainer.scrollTop -
+        chatContainer.clientHeight <
+      100
+    );
+  };
+
+  // Function to scroll to bottom
+  const scrollToBottom = (smooth = false) => {
+    if (teamChatRef.current) {
+      teamChatRef.current.scrollTo({
+        top: teamChatRef.current.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto',
+      });
+    }
+  };
+
   // Fetch team messages from the database
   useEffect(() => {
     const fetchTeamMessages = async () => {
@@ -130,59 +166,77 @@ const TeamPage: React.FC = () => {
 
       // Initial fetch of existing messages
       const { data, error } = await supabase
-        .from("team_messages")
-        .select("*, sender:profiles(display_name, email, avatar_url)")
-        .eq("team_id", id)
-        .order("created_at", { ascending: true });
+        .from('team_messages')
+        .select('*, sender:profiles(display_name, email, avatar_url)')
+        .eq('team_id', id)
+        .order('created_at', { ascending: true });
 
       if (error) {
-        console.error("Error fetching team messages:", error);
+        console.error('Error fetching team messages:', error);
       } else if (data) {
         // Convert timestamp string to Date and map message structure
         const messages = data.map((msg: any) => ({
           id: msg.id,
-          text: msg.message, 
-          sender: msg.sender?.display_name || msg.sender?.email || "Unknown",
+          text: msg.message,
+          sender: msg.sender?.display_name || msg.sender?.email || 'Unknown',
           sender_id: msg.sender_id,
           timestamp: new Date(msg.created_at),
-          avatar_url: msg.sender?.avatar_url || "",
+          avatar_url: msg.sender?.avatar_url || '',
         }));
         setTeamMessages(messages);
+
+        // After initial messages are loaded, scroll to bottom
+        setTimeout(() => {
+          scrollToBottom();
+          setInitialLoadComplete(true);
+        }, 100);
       }
 
       // Set up real-time subscription
       const newSubscription = supabase
-        .channel("team_messages_changes")
+        .channel('team_messages_changes')
         .on(
-          "postgres_changes",
+          'postgres_changes',
           {
-            event: "INSERT",
-            schema: "public",
-            table: "team_messages",
+            event: 'INSERT',
+            schema: 'public',
+            table: 'team_messages',
             filter: `team_id=eq.${id}`,
           },
           async (payload) => {
             // When a new message is added, fetch the sender details
             const { data: senderData, error: senderError } = await supabase
-              .from("profiles")
-              .select("display_name, email, avatar_url")
-              .eq("id", payload.new.sender_id)
+              .from('profiles')
+              .select('display_name, email, avatar_url')
+              .eq('id', payload.new.sender_id)
               .single();
 
             if (senderError) {
-              console.error("Error fetching sender details:", senderError);
+              console.error('Error fetching sender details:', senderError);
             }
 
             const newMessage = {
               id: payload.new.id,
               text: payload.new.message,
-              sender: senderData?.display_name || senderData?.email || "Unknown",
+              sender:
+                senderData?.display_name || senderData?.email || 'Unknown',
               sender_id: payload.new.sender_id,
               timestamp: new Date(payload.new.created_at),
-              avatar_url: senderData?.avatar_url || "",
+              avatar_url: senderData?.avatar_url || '',
             };
 
+            // Check if user is at bottom before adding new message
+            const wasAtBottom = checkIfUserAtBottom();
+
             setTeamMessages((prev) => [...prev, newMessage]);
+
+            // Only scroll if user was already at bottom when message arrived
+            if (wasAtBottom) {
+              setTimeout(() => scrollToBottom(), 100);
+            } else {
+              // Show scroll-down button if not at bottom
+              setShowScrollDown(true);
+            }
           }
         )
         .subscribe();
@@ -198,46 +252,96 @@ const TeamPage: React.FC = () => {
     };
 
     fetchTeamMessages();
-  }, [id, subscription]);
+  }, [id]); // Remove subscription dependency to prevent re-fetching
 
-  // Scroll to bottom when team messages update
+  // Add scroll event listener to determine scroll position
   useEffect(() => {
-    if (teamChatRef.current) {
-      teamChatRef.current.scrollTop = teamChatRef.current.scrollHeight;
-    }
-  }, [teamMessages]);
+    const chatContainer = teamChatRef.current;
+    if (!chatContainer) return;
 
-  // Scroll to bottom when AI messages update
+    const handleScroll = () => {
+      const isAtBottom = checkIfUserAtBottom();
+      setIsNearBottom(isAtBottom);
+      setShowScrollDown(!isAtBottom && teamMessages.length > 0);
+    };
+
+    chatContainer.addEventListener('scroll', handleScroll);
+    return () => chatContainer.removeEventListener('scroll', handleScroll);
+  }, [teamMessages.length]);
+
+  // Handle scroll to bottom button click
+  const handleScrollToBottom = () => {
+    scrollToBottom(true); // Use smooth scrolling for button click
+    setShowScrollDown(false);
+    setIsNearBottom(true);
+  };
+
+  // Effect for resizable panels
   useEffect(() => {
-    if (aiChatRef.current) {
-      aiChatRef.current.scrollTop = aiChatRef.current.scrollHeight;
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+
+      const containerWidth = window.innerWidth;
+      const newLeftWidth = (e.clientX / containerWidth) * 100;
+
+      // Limit resizing to reasonable bounds (15% - 85%)
+      if (newLeftWidth > 15 && newLeftWidth < 85) {
+        setLeftPanelWidth(newLeftWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
     }
-  }, []);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
 
   const handleTeamChatSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!teamChatInput.trim()) return;
 
-    // Only send to the database, the subscription will handle UI update
-    const { error } = await supabase
-      .from("team_messages")
-      .insert([
+    // Check if input starts with "/chips"
+    if (teamChatInput.startsWith('/chips')) {
+      // Extract the message after "/chips"
+      const chipsMessage = teamChatInput.substring(6).trim();
+
+      if (chipsMessage) {
+        // Set the AI message to send to the AIChat component
+        setAiMessage(chipsMessage);
+
+        // Reset input without sending to team chat
+        setTeamChatInput('');
+      }
+    } else {
+      // Regular message - send to team chat
+      const { error } = await supabase.from('team_messages').insert([
         {
           team_id: id,
-          message: teamChatInput, 
+          message: teamChatInput,
           sender_id: user?.id,
         },
       ]);
 
-    if (error) {
-      console.error("Error sending message:", error);
-    } else {
-      setTeamChatInput("");
+      if (error) {
+        console.error('Error sending message:', error);
+      } else {
+        setTeamChatInput('');
+        // We don't need to force scroll here, the realtime subscription will handle it
+      }
     }
   };
 
   const formatTime = (date: Date): string => {
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   if (loading)
@@ -250,10 +354,12 @@ const TeamPage: React.FC = () => {
   if (!team)
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-2xl font-semibold text-gray-700">Team not found</div>
+        <div className="text-2xl font-semibold text-gray-700">
+          Team not found
+        </div>
         <button
           className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-          onClick={() => router.push("/teams")}
+          onClick={() => router.push('/teams')}
         >
           Return to Teams
         </button>
@@ -261,7 +367,7 @@ const TeamPage: React.FC = () => {
     );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col h-screen">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -321,14 +427,21 @@ const TeamPage: React.FC = () => {
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
                 </svg>
               </button>
 
               {/* Go to Project Button */}
               <button
                 className="p-1.5 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                onClick={() => window.open(`/ideas/${team.project_id}`, "_blank", "noopener")}
+                onClick={() =>
+                  window.open(`/ideas/${team.project_id}`, '_blank', 'noopener')
+                }
                 aria-label="Project info"
               >
                 <svg
@@ -351,13 +464,16 @@ const TeamPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Team Chat (Slack-like) */}
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden flex flex-col h-[calc(100vh-160px)]">
-            <div className="p-4 border-b flex items-center justify-between">
-              <div className="flex items-center">
+      {/* Main Content - Resizable Split Panes */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Team Chat Panel */}
+        <div
+          className="bg-white overflow-hidden flex flex-col border-r"
+          style={{ width: `${leftPanelWidth}%` }}
+        >
+          <div className="p-4 border-b flex items-center justify-between">
+            <div className="flex items-center justify-around w-full">
+              <div className="flex items-center w-full justify-start">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5 text-purple-600 mr-2"
@@ -372,85 +488,16 @@ const TeamPage: React.FC = () => {
                     d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"
                   />
                 </svg>
-                <h2 className="text-lg font-semibold text-gray-900">Team Chat</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Team Chat
+                </h2>
               </div>
-              <div className="flex space-x-2">
-                <button className="p-1.5 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div ref={teamChatRef} className="flex-1 overflow-y-auto p-4 space-y-4 text-gray-800">
-              {teamMessages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-600">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-12 w-12 mb-2 text-gray-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                    />
-                  </svg>
-                  <p>No messages yet. Start the conversation!</p>
-                </div>
-              ) : (
-                teamMessages.map((msg, index) => {
-                  const previousMsg = index > 0 ? teamMessages[index - 1] : null;
-                  const showHeader = !previousMsg || previousMsg.sender !== msg.sender;
-                  return (
-                    <div key={msg.id} className={`flex ${showHeader ? "mt-4" : "mt-1"}`}>
-                      {showHeader && (
-                        <div className="flex-shrink-0 mr-3">
-                          {msg.avatar_url ? (
-                            <Image
-                              src={msg.avatar_url}
-                              alt={msg.sender}
-                              width={36}
-                              height={36}
-                              className="rounded"
-                            />
-                          ) : (
-                            <div className="flex items-center justify-center h-9 w-9 rounded-full bg-gray-300 text-gray-800">
-                              {msg.sender ? msg.sender.charAt(0).toUpperCase() : ""}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      <div className={`flex-1 ${!showHeader ? "pl-12" : ""}`}>
-                        {showHeader && (
-                          <div className="flex items-baseline">
-                            <span className="font-medium text-gray-900">{msg.sender}</span>
-                            <span className="ml-2 text-xs text-gray-500">
-                              {formatTime(new Date(msg.timestamp))}
-                            </span>
-                          </div>
-                        )}
-                        <div className="mt-1 text-sm text-gray-800">{msg.text}</div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-            <form onSubmit={handleTeamChatSend} className="border-t p-3 bg-gray-50">
-              <div className="flex items-center space-x-2">
+              {/* Scroll to Bottom Button in Header */}
+              {showScrollDown && (
                 <button
-                  type="button"
-                  className="p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"
+                  onClick={handleScrollToBottom}
+                  className="ml-3 p-1 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+                  aria-label="Scroll to latest messages"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -463,44 +510,148 @@ const TeamPage: React.FC = () => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                      d="M19 13l-7 7-7-7m14-8l-7 7-7-7"
                     />
                   </svg>
                 </button>
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    value={teamChatInput}
-                    onChange={(e) => setTeamChatInput(e.target.value)}
-                    placeholder="Message team members..."
-                    className="w-full py-2 px-3 rounded-full border border-gray-300 focus:ring-2 focus:ring-blue-300 focus:border-blue-500 focus:outline-none text-gray-900"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={!teamChatInput.trim()}
-                  className={`p-2 rounded-full ${
-                    teamChatInput.trim()
-                      ? "bg-purple-600 text-white hover:bg-purple-700"
-                      : "bg-gray-200 text-gray-400"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
-                </button>
-              </div>
-            </form>
+              )}
+            </div>
           </div>
+          <div
+            ref={teamChatRef}
+            className="flex-1 overflow-y-auto p-4 space-y-4 text-gray-800 relative"
+          >
+            {teamMessages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-gray-600">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-12 w-12 mb-2 text-gray-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+                <p>No messages yet. Start the conversation!</p>
+              </div>
+            ) : (
+              teamMessages.map((msg, index) => {
+                const previousMsg = index > 0 ? teamMessages[index - 1] : null;
+                const showHeader =
+                  !previousMsg || previousMsg.sender !== msg.sender;
 
-          {/* AI Chat */}
-          <AIChat projectName={team.project?.PS || team.team_name} />
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex ${showHeader ? 'mt-4' : 'mt-1'}`}
+                  >
+                    {showHeader && (
+                      <div className="flex-shrink-0 mr-3">
+                        {msg.avatar_url ? (
+                          <Image
+                            src={msg.avatar_url}
+                            alt={msg.sender}
+                            width={36}
+                            height={36}
+                            className="rounded"
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-9 w-9 rounded-full bg-gray-300 text-gray-800">
+                            {msg.sender
+                              ? msg.sender.charAt(0).toUpperCase()
+                              : ''}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className={`flex-1 ${!showHeader ? 'pl-12' : ''}`}>
+                      {showHeader && (
+                        <div className="flex items-baseline">
+                          <span className="font-medium text-gray-900">
+                            {msg.sender}
+                          </span>
+                          <span className="ml-2 text-xs text-gray-500">
+                            {formatTime(new Date(msg.timestamp))}
+                          </span>
+                        </div>
+                      )}
+                      <div className="mt-1 text-sm text-gray-800">
+                        {msg.text}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+          <form
+            onSubmit={handleTeamChatSend}
+            className="border-t p-3 bg-gray-50"
+          >
+            <div className="flex items-center space-x-2">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={teamChatInput}
+                  onChange={(e) => setTeamChatInput(e.target.value)}
+                  placeholder="Message team members... (type /chips to send to AI)"
+                  className="w-full py-2 px-3 rounded-full border border-gray-300 focus:ring-2 focus:ring-blue-300 focus:border-blue-500 focus:outline-none text-gray-900"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={!teamChatInput.trim()}
+                className={`p-2 rounded-full ${
+                  teamChatInput.trim()
+                    ? 'bg-purple-600 text-white hover:bg-purple-700'
+                    : 'bg-gray-200 text-gray-400'
+                }`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                  />
+                </svg>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Resizer Handle */}
+        <div
+          className="w-2 bg-gray-200 hover:bg-blue-400 cursor-col-resize active:bg-blue-600 transition-colors"
+          onMouseDown={() => setIsDragging(true)}
+        />
+
+        {/* CHIPS (AI Chat) Panel */}
+        <div
+          className="bg-gray-900 text-white flex flex-col flex-1"
+          style={{ width: `${100 - leftPanelWidth}%` }}
+        >
+          {/* AI Chat with updated props */}
+
+          <AIChat
+            projectName={team.project?.PS || team.team_name}
+            darkMode={true}
+            fullScreen={true}
+            message={aiMessage}
+            onMessageProcessed={() => setAiMessage('')}
+            teamId={id} // Add this line
+          />
         </div>
       </div>
 
@@ -508,7 +659,7 @@ const TeamPage: React.FC = () => {
       {showAddMemberModal && (
         <AddMemberModal
           teamId={id}
-          currentUserEmail={user?.email || ""}
+          currentUserEmail={user?.email || ''}
           onClose={() => setShowAddMemberModal(false)}
           onMemberAdded={handleMemberAdded}
         />
@@ -537,14 +688,14 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
   onClose,
   onMemberAdded,
 }) => {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
   const [checkingEmail, setCheckingEmail] = useState(false);
   const [emailExists, setEmailExists] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Wrap emailRegex in useMemo
-  const emailRegex = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/, []);
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   // Debounced check for existing email in "profiles"
   useEffect(() => {
@@ -556,9 +707,9 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
 
     const timer = setTimeout(async () => {
       const { data, error } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", email)
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
         .maybeSingle();
 
       if (error || !data) {
@@ -570,24 +721,24 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [email, emailRegex]);
+  }, [email]);
 
   const handleInvite = async () => {
-    setError("");
+    setError('');
 
     // Check for self-invite
     if (email === currentUserEmail) {
-      setError("You cannot invite yourself.");
+      setError('You cannot invite yourself.');
       return;
     }
 
     if (!emailRegex.test(email)) {
-      setError("Invalid email address.");
+      setError('Invalid email address.');
       return;
     }
 
     if (!emailExists) {
-      setError("User does not exist. Please ask them to sign up.");
+      setError('User does not exist. Please ask them to sign up.');
       return;
     }
 
@@ -595,45 +746,48 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
     try {
       // 1) Find the user's ID by email
       const { data: profilesData, error: profileError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", email);
+        .from('profiles')
+        .select('id')
+        .eq('email', email);
 
       if (profileError || !profilesData || profilesData.length === 0) {
-        throw new Error("Failed to find user profile.");
+        throw new Error('Failed to find user profile.');
       }
 
       // Use the first profile found
       const profileData = profilesData[0];
 
       if (profileError || !profileData) {
-        throw new Error("Failed to find user profile.");
-      }// After fetching the profile data for the given email:
+        throw new Error('Failed to find user profile.');
+      }
+
+      // After fetching the profile data for the given email:
       const { data: existingMember, error: existingError } = await supabase
-      .from("team_members")
-      .select("id")
-      .eq("team_id", teamId)
-      .eq("user_id", profileData.id)
-      .maybeSingle();
+        .from('team_members')
+        .select('id')
+        .eq('team_id', teamId)
+        .eq('user_id', profileData.id)
+        .maybeSingle();
 
       if (existingError) {
-      throw new Error(existingError.message);
+        throw new Error(existingError.message);
       }
 
       if (existingMember) {
-      setError("User is already a team member.");
-      setLoading(false);
-      return;
+        setError('User is already a team member.');
+        setLoading(false);
+        return;
       }
 
-
       // 2) Insert into team_members
-      const { error: insertError } = await supabase.from("team_members").insert([
-        {
-          team_id: Number(teamId), // ensure correct type if teamId is numeric
-          user_id: profileData.id,
-        },
-      ]);
+      const { error: insertError } = await supabase
+        .from('team_members')
+        .insert([
+          {
+            team_id: Number(teamId), // ensure correct type if teamId is numeric
+            user_id: profileData.id,
+          },
+        ]);
 
       if (insertError) {
         // Possibly a unique constraint violation or other DB error
@@ -643,15 +797,15 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
       // Success
       onMemberAdded();
     } catch (err: any) {
-      setError(err.message || "Failed to add team member.");
-      console.error("AddMemberModal error:", err);
+      setError(err.message || 'Failed to add team member.');
+      console.error('AddMemberModal error:', err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className=" text-black fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-300">
+    <div className="text-black fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-300">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
         {/* Error Toast */}
         {error && (
@@ -660,16 +814,20 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
           </div>
         )}
 
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">Invite a New Member</h2>
+        <h2 className="text-2xl font-bold mb-4 text-gray-800">
+          Invite a New Member
+        </h2>
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Email</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Email
+          </label>
           <div className="flex items-center mt-1">
             <input
               type="email"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
-                setError("");
+                setError('');
               }}
               placeholder="Enter email address"
               className="flex-grow border border-gray-300 rounded-md p-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -678,11 +836,14 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
               <span className="ml-2 text-sm text-gray-500">Checking...</span>
             )}
           </div>
-          {!checkingEmail && email && !emailExists && emailRegex.test(email) && (
-            <p className="text-red-500 text-sm mt-1">
-              User does not exist. Please ask them to sign up.
-            </p>
-          )}
+          {!checkingEmail &&
+            email &&
+            !emailExists &&
+            emailRegex.test(email) && (
+              <p className="text-red-500 text-sm mt-1">
+                User does not exist. Please ask them to sign up.
+              </p>
+            )}
         </div>
 
         <div className="flex justify-end space-x-2 mt-6">
@@ -697,11 +858,11 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
             disabled={loading || !email}
             className={`px-4 py-2 rounded text-white ${
               email
-                ? "bg-indigo-600 hover:bg-indigo-700"
-                : "bg-gray-400 cursor-not-allowed"
+                ? 'bg-indigo-600 hover:bg-indigo-700'
+                : 'bg-gray-400 cursor-not-allowed'
             }`}
           >
-            {loading ? "Inviting..." : "Invite"}
+            {loading ? 'Inviting...' : 'Invite'}
           </button>
         </div>
       </div>
