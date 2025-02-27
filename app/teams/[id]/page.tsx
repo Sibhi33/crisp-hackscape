@@ -54,9 +54,9 @@ const TeamPage: React.FC = () => {
   const [aiMessage, setAiMessage] = useState<string>("");
   
   // Scroll control states
-  const [isNearBottom, setIsNearBottom] = useState(true);
+  const [_isNearBottom, setIsNearBottom] = useState(true);
   const [showScrollDown, setShowScrollDown] = useState(false);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [_initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   // Team members
   const [teamMembers, setTeamMembers] = useState<User[]>([]);
@@ -69,7 +69,7 @@ const TeamPage: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   
   // CHIPS info tooltip state
-  const [showChipsInfo, setShowChipsInfo] = useState(false);
+  const [_showChipsInfo, _setShowChipsInfo] = useState(false);
 
   // Fetch team details (including project)
   useEffect(() => {
@@ -248,7 +248,7 @@ const TeamPage: React.FC = () => {
     };
 
     fetchTeamMessages();
-  }, [id]);  // Remove subscription dependency to prevent re-fetching
+  }, [id, subscription]);  // Add subscription to dependency array
 
   // Add scroll event listener to determine scroll position
   useEffect(() => {

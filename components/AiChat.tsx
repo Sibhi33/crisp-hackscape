@@ -197,7 +197,13 @@ const AIChat: React.FC<AIChatProps> = ({
           filter: `team_id=eq.${teamId}`
         }, 
         async (payload) => {
-          // When a new message is inserted, fetch the full record including profile
+          // Skip messages from the current user entirely to avoid duplicates
+          // These are already added to the local state when sendMessage is called
+          if (payload.new.sender_id === user?.id) {
+            return;
+          }
+          
+          // For messages from other users, fetch the full record including profile
           const { data, error } = await supabase
             .from('ai_messages')
             .select(`
@@ -221,45 +227,34 @@ const AIChat: React.FC<AIChatProps> = ({
           }
           
           if (data) {
-            // Skip if both messages from this user (to avoid duplicates from local state updates)
-            const isFromCurrentUser = data.sender_id === user?.id;
+            const newMessages: Message[] = [];
             
-            // Check if messages already exist in the state (to avoid duplicates)
-            const userMsgExists = messages.some(msg => msg.id === `${data.id}-user`);
-            const aiMsgExists = messages.some(msg => msg.id === `${data.id}-ai`);
+            // Add user message
+            if (data.user_message) {
+              newMessages.push({
+                id: `${data.id}-user`,
+                text: data.user_message,
+                sender: data.sender_id === user?.id ? 'You' : (data.profiles?.display_name || 'Team member'),
+                sender_id: data.sender_id,
+                sender_name: data.profiles?.display_name || data.profiles?.email || 'Unknown',
+                timestamp: new Date(data.created_at),
+                avatar_url: data.profiles?.avatar_url
+              });
+            }
             
-            // Only update state if we're seeing messages from other users
-            // or if we somehow missed adding our own messages to the local state
-            if (!isFromCurrentUser || !userMsgExists || !aiMsgExists) {
-              const newMessages: Message[] = [];
-              
-              // Add user message
-              if (data.user_message && !userMsgExists) {
-                newMessages.push({
-                  id: `${data.id}-user`,
-                  text: data.user_message,
-                  sender: data.sender_id === user?.id ? 'You' : (data.profiles?.display_name || 'Team member'),
-                  sender_id: data.sender_id,
-                  sender_name: data.profiles?.display_name || data.profiles?.email || 'Unknown',
-                  timestamp: new Date(data.created_at),
-                  avatar_url: data.profiles?.avatar_url
-                });
-              }
-              
-              // Add AI message
-              if (data.ai_message && !aiMsgExists) {
-                newMessages.push({
-                  id: `${data.id}-ai`,
-                  text: data.ai_message,
-                  sender: 'AI Assistant',
-                  timestamp: new Date(data.created_at),
-                  model: 'research'
-                });
-              }
-              
-              if (newMessages.length > 0) {
-                setMessages(prevMessages => [...prevMessages, ...newMessages]);
-              }
+            // Add AI message
+            if (data.ai_message) {
+              newMessages.push({
+                id: `${data.id}-ai`,
+                text: data.ai_message,
+                sender: 'AI Assistant',
+                timestamp: new Date(data.created_at),
+                model: 'research'
+              });
+            }
+            
+            if (newMessages.length > 0) {
+              setMessages(prevMessages => [...prevMessages, ...newMessages]);
             }
           }
         }
@@ -703,6 +698,7 @@ const AIChat: React.FC<AIChatProps> = ({
           </div>
         </div>
       )}
+
       {/* Messages */}
       <div
         ref={chatContainerRef}

@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 
+// Move emailRegex outside the component or use useMemo
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 interface TeamCreationModalProps {
   project: any;
   onClose: () => void;
@@ -26,9 +29,6 @@ const TeamCreationModal: React.FC<TeamCreationModalProps> = ({
   // States for email existence check
   const [emailExists, setEmailExists] = useState<boolean>(false);
   const [checkingEmail, setCheckingEmail] = useState<boolean>(false);
-
-  // Basic email validation regex
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   // Debounced effect to check if the email exists in the system
   useEffect(() => {
