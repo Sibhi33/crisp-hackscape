@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { Groq } from 'groq-sdk';
 
@@ -16,7 +16,7 @@ export async function analyzeIdea({
   problemStatement,
   description,
   tracks,
-  otherDetails
+  otherDetails,
 }: {
   resumeText: string;
   problemStatement: string;
@@ -139,31 +139,59 @@ Keep your response factual and evidence-based. Do not make assumptions or includ
   try {
     const groq = new Groq({
       apiKey: process.env.NEXT_PUBLIC_GROQ_API_KEY,
-      dangerouslyAllowBrowser: true
+      dangerouslyAllowBrowser: true,
     });
 
     const completion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: prompt }],
-      model: "mixtral-8x7b-32768",
+      model: 'mixtral-8x7b-32768',
       temperature: 0.3,
       max_completion_tokens: 8192,
       top_p: 0.8,
       stream: false,
-      stop: ["\n\n\n"],
+      stop: ['\n\n\n'],
       frequency_penalty: 0.3,
-      presence_penalty: 0.3
+      presence_penalty: 0.3,
     });
 
-    const content = completion.choices[0]?.message?.content || "";
+    const content = completion.choices[0]?.message?.content || '';
 
     // Define the sections to extract from the response.
-    const sections: { key: keyof ApiResponse; start: string; end: string | null }[] = [
-      { key: 'ideaDescription', start: '1) Idea Description:', end: '2) Existing Competitors:' },
-      { key: 'existingCompetitors', start: '2) Existing Competitors:', end: '3) Impact:' },
-      { key: 'impact', start: '3) Impact:', end: '4) Unique Value Propositions:' },
-      { key: 'uniqueValuePropositions', start: '4) Unique Value Propositions:', end: '5) Other Information:' },
-      { key: 'otherInformation', start: '5) Other Information:', end: '6) Reference Links & Resources:' },
-      { key: 'referenceLinks', start: '6) Reference Links & Resources:', end: null }
+    const sections: {
+      key: keyof ApiResponse;
+      start: string;
+      end: string | null;
+    }[] = [
+      {
+        key: 'ideaDescription',
+        start: '1) Idea Description:',
+        end: '2) Existing Competitors:',
+      },
+      {
+        key: 'existingCompetitors',
+        start: '2) Existing Competitors:',
+        end: '3) Impact:',
+      },
+      {
+        key: 'impact',
+        start: '3) Impact:',
+        end: '4) Unique Value Propositions:',
+      },
+      {
+        key: 'uniqueValuePropositions',
+        start: '4) Unique Value Propositions:',
+        end: '5) Other Information:',
+      },
+      {
+        key: 'otherInformation',
+        start: '5) Other Information:',
+        end: '6) Reference Links & Resources:',
+      },
+      {
+        key: 'referenceLinks',
+        start: '6) Reference Links & Resources:',
+        end: null,
+      },
     ];
 
     const result: ApiResponse = {} as ApiResponse;
@@ -175,7 +203,9 @@ Keep your response factual and evidence-based. Do not make assumptions or includ
         return;
       }
 
-      const endIndex = section.end ? content.indexOf(section.end) : content.length;
+      const endIndex = section.end
+        ? content.indexOf(section.end)
+        : content.length;
       if (endIndex === -1) {
         result[section.key] = 'Section end not found';
         return;

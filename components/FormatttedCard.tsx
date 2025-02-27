@@ -7,7 +7,10 @@ interface FormattedAnalysisCardProps {
   content: string;
 }
 
-const FormattedAnalysisCard: React.FC<FormattedAnalysisCardProps> = ({ title, content }) => {
+const FormattedAnalysisCard: React.FC<FormattedAnalysisCardProps> = ({
+  title,
+  content,
+}) => {
   // Function to render text with links
   const renderTextWithLinks = (text: string): React.ReactNode[] => {
     const parts = text.split(/(<https?:\/\/[^>]+>)/);
@@ -37,10 +40,10 @@ const FormattedAnalysisCard: React.FC<FormattedAnalysisCardProps> = ({ title, co
     const lines = text.split('\n');
     let currentSection = '';
     const formattedContent: React.ReactNode[] = [];
-    
+
     lines.forEach((line, index) => {
       const trimmedLine = line.trim();
-      
+
       if (trimmedLine.startsWith('- **') && trimmedLine.includes(':**')) {
         // Main section header
         currentSection = trimmedLine.replace('- **', '').split(':**')[0];
@@ -89,7 +92,7 @@ const FormattedAnalysisCard: React.FC<FormattedAnalysisCardProps> = ({ title, co
         );
       }
     });
-    
+
     return formattedContent;
   };
 

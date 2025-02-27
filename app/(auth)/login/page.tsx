@@ -15,7 +15,12 @@ const Login = () => {
   const [name, setName] = useState('');
   const [verificationMessage, setVerificationMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail } = useAuth();
+  const {
+    signInWithGoogle,
+    signInWithApple,
+    signInWithEmail,
+    signUpWithEmail,
+  } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {

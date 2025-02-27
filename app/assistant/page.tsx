@@ -1,9 +1,15 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { AlertCircle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -46,18 +52,16 @@ const GroqStepperPage = () => {
 
       // Insert into Supabase if user is logged in
       if (user) {
-        const { error: insertError } = await supabase
-          .from('projects')
-          .insert({
-            user: user.id,
-            PS: problemStatement,
-            PSdescription: description,
-            // If you also want to include 'tracks', you could do something like:
-            // PSotherdetails: `Tracks: ${tracks}, Other: ${otherDetails}`
-            PSotherdetails: otherDetails,
-            APIresponse: JSON.stringify(result),
-            createdat: new Date().toISOString(),
-          });
+        const { error: insertError } = await supabase.from('projects').insert({
+          user: user.id,
+          PS: problemStatement,
+          PSdescription: description,
+          // If you also want to include 'tracks', you could do something like:
+          // PSotherdetails: `Tracks: ${tracks}, Other: ${otherDetails}`
+          PSotherdetails: otherDetails,
+          APIresponse: JSON.stringify(result),
+          createdat: new Date().toISOString(),
+        });
 
         if (insertError) {
           console.error('Supabase insert error:', insertError);
@@ -66,7 +70,9 @@ const GroqStepperPage = () => {
         console.error('User not logged in, cannot save project');
       }
     } catch (err) {
-      setError('An error occurred while analyzing your submission. Please try again.');
+      setError(
+        'An error occurred while analyzing your submission. Please try again.'
+      );
       console.error('API Error:', err);
     } finally {
       setLoading(false);
@@ -113,7 +119,9 @@ const GroqStepperPage = () => {
       case 3:
         return (
           <div className="space-y-4">
-            <label className="text-sm font-medium">Other Relevant Details</label>
+            <label className="text-sm font-medium">
+              Other Relevant Details
+            </label>
             <Textarea
               value={otherDetails}
               onChange={(e) => setOtherDetails(e.target.value)}
@@ -133,14 +141,12 @@ const GroqStepperPage = () => {
         {Object.entries(apiResult || {}).map(([key, value]) => (
           <FormattedAnalysisCard
             key={key}
-            title={
-              key
-                .replace(/([A-Z])/g, ' $1')
-                .trim()
-                .split(' ')
-                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                .join(' ')
-            }
+            title={key
+              .replace(/([A-Z])/g, ' $1')
+              .trim()
+              .split(' ')
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ')}
             content={value}
           />
         ))}
@@ -194,18 +200,21 @@ const GroqStepperPage = () => {
                     {renderStepContent()}
                     <div className="mt-6 flex justify-between">
                       {step > 0 && (
-                        <Button variant="outline" onClick={() => setStep(step - 1)}>
+                        <Button
+                          variant="outline"
+                          onClick={() => setStep(step - 1)}
+                        >
                           Previous
                         </Button>
                       )}
                       {step < totalSteps - 1 ? (
-                        <Button onClick={() => setStep(step + 1)}>
-                          Next
-                        </Button>
+                        <Button onClick={() => setStep(step + 1)}>Next</Button>
                       ) : (
                         <Button
                           onClick={handleSubmit}
-                          disabled={!problemStatement || !description || !tracks}
+                          disabled={
+                            !problemStatement || !description || !tracks
+                          }
                         >
                           Analyze Idea
                         </Button>

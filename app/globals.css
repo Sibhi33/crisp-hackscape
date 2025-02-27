@@ -69,7 +69,6 @@
   }
 }
 
-
 /* Add this to your global CSS file */
 .markdown-content {
   line-height: 1.6;
@@ -164,7 +163,9 @@
 
 /* Add hover effect to code blocks */
 .markdown-content pre:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
   transition: box-shadow 0.2s ease-in-out;
 }
 

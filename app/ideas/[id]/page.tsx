@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import React, { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import FormattedAnalysisCard from "@/components/FormatttedCard";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import FormattedAnalysisCard from '@/components/FormatttedCard';
 
 const IdeaDetailsPage = () => {
   const params = useParams();
@@ -20,7 +20,7 @@ const IdeaDetailsPage = () => {
 
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState<string>('');
 
   // Modal states
   const [showShareModal, setShowShareModal] = useState(false);
@@ -31,13 +31,13 @@ const IdeaDetailsPage = () => {
     const fetchProject = async () => {
       setLoading(true);
       const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .eq("id", id)
+        .from('projects')
+        .select('*')
+        .eq('id', id)
         .single();
       if (error) {
-        setError("Error fetching project.");
-        console.error("Error fetching project:", error);
+        setError('Error fetching project.');
+        console.error('Error fetching project:', error);
       } else {
         setProject(data);
       }
@@ -60,7 +60,7 @@ const IdeaDetailsPage = () => {
   if (error || !project) {
     return (
       <div className="p-6 flex justify-center items-center min-h-screen">
-        {error || "Project not found."}
+        {error || 'Project not found.'}
       </div>
     );
   }
@@ -70,14 +70,14 @@ const IdeaDetailsPage = () => {
   try {
     apiResponseParsed = JSON.parse(project.APIresponse);
   } catch (err) {
-    console.error("Error parsing API response:", err);
+    console.error('Error parsing API response:', err);
   }
 
   // Create a public share link
   const shareLink =
-    typeof window !== "undefined"
+    typeof window !== 'undefined'
       ? `${window.location.origin}/ideas/${id}`
-      : "";
+      : '';
 
   const handleCopy = async () => {
     try {
@@ -85,31 +85,28 @@ const IdeaDetailsPage = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Failed to copy text:", err);
+      console.error('Failed to copy text:', err);
     }
   };
 
   const handleDelete = async () => {
-    const { error } = await supabase
-      .from("projects")
-      .delete()
-      .eq("id", id);
+    const { error } = await supabase.from('projects').delete().eq('id', id);
     if (error) {
-      console.error("Error deleting project:", error);
+      console.error('Error deleting project:', error);
     } else {
-      router.push("/ideas");
+      router.push('/ideas');
     }
   };
 
   // Define a repeating pattern of grid spans for a bento-like layout
   const bentoPatterns = [
     // Large tiles
-    "col-span-3 row-span-2",
-    "col-span-3 row-span-2",
+    'col-span-3 row-span-2',
+    'col-span-3 row-span-2',
     // Smaller tiles
-    "col-span-2 row-span-1",
-    "col-span-2 row-span-1",
-    "col-span-2 row-span-1",
+    'col-span-2 row-span-1',
+    'col-span-2 row-span-1',
+    'col-span-2 row-span-1',
   ];
 
   return (
@@ -124,10 +121,7 @@ const IdeaDetailsPage = () => {
             ← Back
           </Button>
           <div className="flex space-x-2">
-            <Button
-              variant="secondary"
-              onClick={() => setShowShareModal(true)}
-            >
+            <Button variant="secondary" onClick={() => setShowShareModal(true)}>
               Share
             </Button>
             <Button
@@ -182,17 +176,14 @@ const IdeaDetailsPage = () => {
                   className={`relative overflow-hidden rounded-xl shadow-lg bg-gradient-to-tr from-gray-50 to-white p-4 ${layoutClass}`}
                 >
                   <FormattedAnalysisCard
-                    title={
-                      key
-                        .replace(/([A-Z])/g, " $1")
-                        .trim()
-                        .split(" ")
-                        .map(
-                          (word) =>
-                            word.charAt(0).toUpperCase() + word.slice(1)
-                        )
-                        .join(" ")
-                    }
+                    title={key
+                      .replace(/([A-Z])/g, ' $1')
+                      .trim()
+                      .split(' ')
+                      .map(
+                        (word) => word.charAt(0).toUpperCase() + word.slice(1)
+                      )
+                      .join(' ')}
                     content={value as string}
                   />
                 </div>
@@ -205,7 +196,9 @@ const IdeaDetailsPage = () => {
         {showShareModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <div className="bg-white rounded-lg p-6 w-80">
-              <h2 className="text-xl text-black font-semibold mb-4">Share Project</h2>
+              <h2 className="text-xl text-black font-semibold mb-4">
+                Share Project
+              </h2>
               <input
                 type="text"
                 readOnly
@@ -213,7 +206,7 @@ const IdeaDetailsPage = () => {
                 className="w-full p-2 border rounded mb-4 text-black"
               />
               <Button onClick={handleCopy} className="w-full mb-2">
-                {copied ? "Copied!" : "Copy Link"}
+                {copied ? 'Copied!' : 'Copy Link'}
               </Button>
               <Button
                 variant="outline"
@@ -230,7 +223,9 @@ const IdeaDetailsPage = () => {
         {showDeleteModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <div className="bg-white rounded-lg p-6 w-80">
-              <h2 className="text-xl text-black font-semibold mb-4">Confirm Delete</h2>
+              <h2 className="text-xl text-black font-semibold mb-4">
+                Confirm Delete
+              </h2>
               <p className="mb-4 text-black">
                 Are you sure you want to delete this project?
               </p>

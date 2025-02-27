@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
-import React, { useEffect, useState } from "react";
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import React, { useEffect, useState } from 'react';
 
 // Move emailRegex outside the component or use useMemo
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -20,10 +20,10 @@ const TeamCreationModal: React.FC<TeamCreationModalProps> = ({
   onTeamCreated,
 }) => {
   const { user } = useAuth();
-  const [teamName, setTeamName] = useState("");
-  const [memberEmail, setMemberEmail] = useState("");
+  const [teamName, setTeamName] = useState('');
+  const [memberEmail, setMemberEmail] = useState('');
   const [invitedMembers, setInvitedMembers] = useState<string[]>([]);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   // States for email existence check
@@ -39,9 +39,9 @@ const TeamCreationModal: React.FC<TeamCreationModalProps> = ({
     setCheckingEmail(true);
     const timer = setTimeout(async () => {
       const { data, error } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", memberEmail)
+        .from('profiles')
+        .select('id')
+        .eq('email', memberEmail)
         .maybeSingle();
 
       if (error || !data) {
@@ -56,32 +56,32 @@ const TeamCreationModal: React.FC<TeamCreationModalProps> = ({
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMemberEmail(e.target.value);
-    setError("");
+    setError('');
   };
 
   const handleInvite = () => {
     // Prevent inviting oneself
     if (user?.email === memberEmail) {
-      setError("You cannot add yourself.");
+      setError('You cannot add yourself.');
       return;
     }
 
     if (memberEmail && emailRegex.test(memberEmail) && emailExists) {
       if (invitedMembers.includes(memberEmail)) {
-        setError("This email has already been invited.");
+        setError('This email has already been invited.');
         return;
       }
       setInvitedMembers((prev) => [...prev, memberEmail]);
-      setMemberEmail("");
-      setError("");
+      setMemberEmail('');
+      setError('');
     } else {
-      setError("User does not exist. Please ask them to sign up.");
+      setError('User does not exist. Please ask them to sign up.');
     }
   };
 
   const handleCreateTeam = async () => {
     if (!teamName || invitedMembers.length === 0) {
-      setError("Team name and at least one member are required.");
+      setError('Team name and at least one member are required.');
       return;
     }
 
@@ -90,7 +90,7 @@ const TeamCreationModal: React.FC<TeamCreationModalProps> = ({
     try {
       // 1) Insert the new team
       const { data: insertedTeams, error: teamError } = await supabase
-        .from("teams")
+        .from('teams')
         .insert([
           {
             project_id: project.id,
@@ -101,16 +101,16 @@ const TeamCreationModal: React.FC<TeamCreationModalProps> = ({
         .select();
 
       if (teamError || !insertedTeams || insertedTeams.length === 0) {
-        throw new Error(teamError?.message || "Failed to create team.");
+        throw new Error(teamError?.message || 'Failed to create team.');
       }
 
       const newTeam = insertedTeams[0];
 
       // 2) Fetch the profiles of invited members to get their user IDs
       const { data: fetchedProfiles, error: fetchError } = await supabase
-        .from("profiles")
-        .select("id, email")
-        .in("email", invitedMembers);
+        .from('profiles')
+        .select('id, email')
+        .in('email', invitedMembers);
 
       if (fetchError) {
         throw new Error(fetchError.message);
@@ -118,7 +118,9 @@ const TeamCreationModal: React.FC<TeamCreationModalProps> = ({
 
       if (!fetchedProfiles || fetchedProfiles.length === 0) {
         // If none of the invited emails exist in 'profiles', handle that scenario
-        throw new Error("No invited emails match existing users. Please ask them to sign up.");
+        throw new Error(
+          'No invited emails match existing users. Please ask them to sign up.'
+        );
       }
 
       // 3) Insert all valid invited members into team_members
@@ -128,7 +130,7 @@ const TeamCreationModal: React.FC<TeamCreationModalProps> = ({
       }));
 
       const { error: memberError } = await supabase
-        .from("team_members")
+        .from('team_members')
         .insert(teamMembersToInsert);
 
       if (memberError) {
@@ -139,8 +141,8 @@ const TeamCreationModal: React.FC<TeamCreationModalProps> = ({
       onTeamCreated(newTeam);
       onClose();
     } catch (err: any) {
-      console.error("Team creation error:", err);
-      setError(err.message || "Failed to create team. Please try again.");
+      console.error('Team creation error:', err);
+      setError(err.message || 'Failed to create team. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -224,7 +226,7 @@ const TeamCreationModal: React.FC<TeamCreationModalProps> = ({
             onClick={handleCreateTeam}
             disabled={loading || !teamName || invitedMembers.length === 0}
           >
-            {loading ? "Creating..." : "Create Team"}
+            {loading ? 'Creating...' : 'Create Team'}
           </Button>
         </div>
       </div>

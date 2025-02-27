@@ -52,9 +52,9 @@ const AI_MODELS: Model[] = [
   },
 ];
 
-const AIChat: React.FC<AIChatProps> = ({ 
-  projectName, 
-  darkMode = false, 
+const AIChat: React.FC<AIChatProps> = ({
+  projectName,
+  darkMode = false,
   fullScreen = false,
   message = '',
   onMessageProcessed,
@@ -70,7 +70,7 @@ const AIChat: React.FC<AIChatProps> = ({
   const modelSelectorRef = useRef<HTMLDivElement>(null);
   const [showChipsInfo, setShowChipsInfo] = useState(false);
   const realtimeSubscriptionRef = useRef<any>(null);
-  
+
   // Theme-based styles
   const themeStyles = {
     background: darkMode ? 'bg-gray-900' : 'bg-white',
@@ -82,7 +82,9 @@ const AIChat: React.FC<AIChatProps> = ({
     inputBg: darkMode ? 'bg-gray-800' : 'bg-white',
     inputBorder: darkMode ? 'border-gray-600' : 'border-gray-300',
     inputText: darkMode ? 'text-white' : 'text-gray-900',
-    infoPanel: darkMode ? 'bg-gray-800 text-gray-200' : 'bg-gray-100 text-gray-800',
+    infoPanel: darkMode
+      ? 'bg-gray-800 text-gray-200'
+      : 'bg-gray-100 text-gray-800',
   };
 
   // Welcome message from AI
@@ -114,7 +116,8 @@ const AIChat: React.FC<AIChatProps> = ({
 
       const { data, error } = await supabase
         .from('ai_messages')
-        .select(`
+        .select(
+          `
           id,
           user_message,
           ai_message,
@@ -125,7 +128,8 @@ const AIChat: React.FC<AIChatProps> = ({
             email,
             avatar_url
           )
-        `)
+        `
+        )
         .eq('team_id', teamId)
         .order('created_at', { ascending: true });
 
@@ -136,7 +140,7 @@ const AIChat: React.FC<AIChatProps> = ({
 
       if (data) {
         const formattedMessages: Message[] = [];
-        data.forEach(msg => {
+        data.forEach((msg) => {
           // Add user message
           if (msg.user_message) {
             formattedMessages.push({
@@ -144,11 +148,13 @@ const AIChat: React.FC<AIChatProps> = ({
               text: msg.user_message,
               sender: 'You',
               sender_id: msg.sender_id,
-              sender_name: msg.profiles?.display_name || msg.profiles?.email || 'Unknown',
+              sender_name:
+                msg.profiles?.[0]?.display_name || msg.profiles?.[0]?.email || 'Unknown',
               timestamp: new Date(msg.created_at),
-              avatar_url: msg.profiles?.avatar_url
+              avatar_url: msg.profiles?.[0]?.avatar_url,
             });
           }
+          
           // Add AI message
           if (msg.ai_message) {
             formattedMessages.push({
@@ -156,7 +162,7 @@ const AIChat: React.FC<AIChatProps> = ({
               text: msg.ai_message,
               sender: 'AI Assistant',
               timestamp: new Date(msg.created_at),
-              model: 'research'
+              model: 'research',
             });
           }
         });
@@ -165,10 +171,10 @@ const AIChat: React.FC<AIChatProps> = ({
     };
 
     fetchMessages();
-    
+
     // Set up realtime subscription
     setupRealtimeSubscription();
-    
+
     // Cleanup function to remove subscription
     return () => {
       if (realtimeSubscriptionRef.current) {
@@ -176,37 +182,39 @@ const AIChat: React.FC<AIChatProps> = ({
       }
     };
   }, [teamId]);
-  
+
   // Setup realtime subscription
   const setupRealtimeSubscription = async () => {
     if (!teamId) return;
-    
+
     // Remove existing subscription if it exists
     if (realtimeSubscriptionRef.current) {
       supabase.removeChannel(realtimeSubscriptionRef.current);
     }
-    
+
     // Create new subscription
     const channel = supabase
       .channel(`ai_messages_${teamId}`)
-      .on('postgres_changes', 
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
           table: 'ai_messages',
-          filter: `team_id=eq.${teamId}`
-        }, 
+          filter: `team_id=eq.${teamId}`,
+        },
         async (payload) => {
           // Skip messages from the current user entirely to avoid duplicates
           // These are already added to the local state when sendMessage is called
           if (payload.new.sender_id === user?.id) {
             return;
           }
-          
+
           // For messages from other users, fetch the full record including profile
           const { data, error } = await supabase
             .from('ai_messages')
-            .select(`
+            .select(
+              `
               id,
               user_message,
               ai_message,
@@ -217,31 +225,39 @@ const AIChat: React.FC<AIChatProps> = ({
                 email,
                 avatar_url
               )
-            `)
+            `
+            )
             .eq('id', payload.new.id)
             .single();
-            
+
           if (error) {
             console.error('Error fetching new message details:', error);
             return;
           }
-          
+
           if (data) {
             const newMessages: Message[] = [];
-            
+
             // Add user message
             if (data.user_message) {
               newMessages.push({
                 id: `${data.id}-user`,
                 text: data.user_message,
-                sender: data.sender_id === user?.id ? 'You' : (data.profiles?.display_name || 'Team member'),
+                sender:
+                  data.sender_id === user?.id
+                    ? 'You'
+                    : data.profiles?.[0]?.display_name || 'Team member',
                 sender_id: data.sender_id,
-                sender_name: data.profiles?.display_name || data.profiles?.email || 'Unknown',
+                sender_name:
+                  data.profiles?.[0]?.display_name ||
+                  data.profiles?.[0]?.email ||
+                  'Unknown',
                 timestamp: new Date(data.created_at),
-                avatar_url: data.profiles?.avatar_url
+                avatar_url: data.profiles?.[0]?.avatar_url,
               });
             }
             
+
             // Add AI message
             if (data.ai_message) {
               newMessages.push({
@@ -249,18 +265,18 @@ const AIChat: React.FC<AIChatProps> = ({
                 text: data.ai_message,
                 sender: 'AI Assistant',
                 timestamp: new Date(data.created_at),
-                model: 'research'
+                model: 'research',
               });
             }
-            
+
             if (newMessages.length > 0) {
-              setMessages(prevMessages => [...prevMessages, ...newMessages]);
+              setMessages((prevMessages) => [...prevMessages, ...newMessages]);
             }
           }
         }
       )
       .subscribe();
-      
+
     realtimeSubscriptionRef.current = channel;
   };
 
@@ -271,9 +287,9 @@ const AIChat: React.FC<AIChatProps> = ({
     const userMessage: Message = {
       id: Date.now(),
       text: text,
-      sender: user?.display_name || "You",  // use display name or "User"
+      sender: user?.user_metadata?.display_name || 'You',
       sender_id: user?.id,
-      sender_name: user?.display_name || "You",  // remove email fallback
+      sender_name: user?.user_metadata?.display_name || 'You',
       timestamp: new Date(),
     };
 
@@ -336,7 +352,7 @@ const AIChat: React.FC<AIChatProps> = ({
           model: selectedModel.id,
         },
       ]);
-      
+
       if (onMessageProcessed) {
         onMessageProcessed();
       }
@@ -375,11 +391,11 @@ const AIChat: React.FC<AIChatProps> = ({
     const userMessage: Message = {
       id: Date.now(),
       text: inputValue,
-      sender: user?.display_name || "You",  // use display name only
+      sender: user?.user_metadata?.display_name || 'You',
       sender_id: user?.id,
-      sender_name: user?.display_name || "You",  // remove email fallback
+      sender_name: user?.user_metadata?.display_name || 'You',
       timestamp: new Date(),
-      avatar_url: user?.avatar_url || ''
+      avatar_url: user?.user_metadata?.avatar_url || '',
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -417,14 +433,12 @@ const AIChat: React.FC<AIChatProps> = ({
       const aiResponse = formatAIResponse(data.response, selectedModel.id);
 
       // Save both messages to the database
-      const { error: dbError } = await supabase
-        .from('ai_messages')
-        .insert({
-          team_id: teamId,
-          user_message: inputValue,
-          ai_message: aiResponse,
-          sender_id: user?.id,
-        });
+      const { error: dbError } = await supabase.from('ai_messages').insert({
+        team_id: teamId,
+        user_message: inputValue,
+        ai_message: aiResponse,
+        sender_id: user?.id,
+      });
 
       if (dbError) {
         console.error('Error saving messages:', dbError);
@@ -460,16 +474,13 @@ const AIChat: React.FC<AIChatProps> = ({
   const formatAIResponse = (text: string, modelId: string) => {
     // Format deepseek model responses with <think> tags
     if (modelId === 'reasoning' && text.includes('<think>')) {
-      text = text.replace(
-        /<think>[\s\S]*?<\/think>/g,
-        (match) => {
-          // Extract the content inside the think tags
-          const thinkContent = match.replace(/<think>|<\/think>/g, '');
-          return `<div class="thinking-block p-3 my-2 border-l-4 border-indigo-500 bg-opacity-20 ${darkMode ? 'bg-indigo-900' : 'bg-indigo-50'}">
+      text = text.replace(/<think>[\s\S]*?<\/think>/g, (match) => {
+        // Extract the content inside the think tags
+        const thinkContent = match.replace(/<think>|<\/think>/g, '');
+        return `<div class="thinking-block p-3 my-2 border-l-4 border-indigo-500 bg-opacity-20 ${darkMode ? 'bg-indigo-900' : 'bg-indigo-50'}">
             <strong>Thinking:</strong>
             <div class="pl-2 mt-1">${thinkContent}</div>`;
-        }
-      );
+      });
     }
 
     // Improved link formatting using our special format LINK[URL|TEXT]
@@ -548,13 +559,22 @@ const AIChat: React.FC<AIChatProps> = ({
       />
     ),
     h1: ({ node, ...props }: any) => (
-      <h1 className={`text-2xl font-bold mt-4 mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`} {...props} />
+      <h1
+        className={`text-2xl font-bold mt-4 mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}
+        {...props}
+      />
     ),
     h2: ({ node, ...props }: any) => (
-      <h2 className={`text-xl font-bold mt-3 mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`} {...props} />
+      <h2
+        className={`text-xl font-bold mt-3 mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}
+        {...props}
+      />
     ),
     h3: ({ node, ...props }: any) => (
-      <h3 className={`text-lg font-bold mt-3 mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`} {...props} />
+      <h3
+        className={`text-lg font-bold mt-3 mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}
+        {...props}
+      />
     ),
     p: ({ node, ...props }: any) => <p className="mb-2" {...props} />,
     ul: ({ node, ...props }: any) => (
@@ -580,29 +600,33 @@ const AIChat: React.FC<AIChatProps> = ({
   };
 
   return (
-    <div 
+    <div
       className={`${themeStyles.background} rounded-lg shadow-sm overflow-hidden flex flex-col ${fullScreen ? 'h-full' : 'h-[calc(100vh-160px)]'}`}
     >
       {/* Header */}
-      <div className={`p-4 border-b flex items-center justify-between ${themeStyles.headerBg} ${themeStyles.borderColor}`}>
+      <div
+        className={`p-4 border-b flex items-center justify-between ${themeStyles.headerBg} ${themeStyles.borderColor}`}
+      >
         <div className="flex items-center">
-          <span className={`text-lg font-semibold ${themeStyles.text}`}>CHIPS</span>
-          <button 
+          <span className={`text-lg font-semibold ${themeStyles.text}`}>
+            CHIPS
+          </span>
+          <button
             className={`ml-2 p-1 rounded-full text-gray-400 hover:${darkMode ? 'text-white hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-200'}`}
             onClick={() => setShowChipsInfo(!showChipsInfo)}
             aria-label="CHIPS Information"
           >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="h-5 w-5" 
-              fill="none" 
-              viewBox="0 0 24 24" 
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
                 d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
@@ -632,19 +656,27 @@ const AIChat: React.FC<AIChatProps> = ({
           </button>
 
           {showModelSelector && (
-            <div className={`${darkMode ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-white text-black border-gray-200'} absolute right-0 mt-1 w-64 rounded-md shadow-lg z-10 border overflow-hidden`}>
+            <div
+              className={`${darkMode ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-white text-black border-gray-200'} absolute right-0 mt-1 w-64 rounded-md shadow-lg z-10 border overflow-hidden`}
+            >
               {AI_MODELS.map((model) => (
                 <button
                   key={model.id}
                   onClick={() => handleModelSelect(model)}
                   className={`w-full text-left px-4 py-3 hover:${darkMode ? 'bg-gray-700' : 'bg-gray-100'} transition-colors flex items-start space-x-2 ${
-                    selectedModel.id === model.id ? (darkMode ? 'bg-gray-700' : 'bg-gray-50') : ''
+                    selectedModel.id === model.id
+                      ? darkMode
+                        ? 'bg-gray-700'
+                        : 'bg-gray-50'
+                      : ''
                   }`}
                 >
                   <span className="text-xl">{model.icon}</span>
                   <div>
                     <div className="font-medium">{model.name}</div>
-                    <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <div
+                      className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}
+                    >
                       {model.description}
                     </div>
                   </div>
@@ -657,21 +689,33 @@ const AIChat: React.FC<AIChatProps> = ({
 
       {/* CHIPS Info Panel */}
       {showChipsInfo && (
-        <div className={`p-4 ${themeStyles.infoPanel} border-b ${themeStyles.borderColor} transition-all ease-in-out duration-300`}>
+        <div
+          className={`p-4 ${themeStyles.infoPanel} border-b ${themeStyles.borderColor} transition-all ease-in-out duration-300`}
+        >
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center mb-3">
               <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center mr-3">
                 <span className="text-white text-lg font-bold">C</span>
               </div>
-              <h3 className={`font-semibold text-lg ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+              <h3
+                className={`font-semibold text-lg ${darkMode ? 'text-white' : 'text-gray-800'}`}
+              >
                 Collaborative Hackathon Intelligence with Project Support
               </h3>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-              <div className={`p-3 rounded ${darkMode ? 'bg-gray-700' : 'bg-white'} shadow-sm`}>
-                <h4 className={`font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>💡 What CHIPS Can Do</h4>
-                <ul className={`list-disc pl-5 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'} space-y-1`}>
+              <div
+                className={`p-3 rounded ${darkMode ? 'bg-gray-700' : 'bg-white'} shadow-sm`}
+              >
+                <h4
+                  className={`font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}
+                >
+                  💡 What CHIPS Can Do
+                </h4>
+                <ul
+                  className={`list-disc pl-5 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'} space-y-1`}
+                >
                   <li>Answer technical questions about your project</li>
                   <li>Help brainstorm ideas and solutions</li>
                   <li>Provide code examples and explanations</li>
@@ -679,21 +723,32 @@ const AIChat: React.FC<AIChatProps> = ({
                   <li>Research technologies and frameworks</li>
                 </ul>
               </div>
-              
-              <div className={`p-3 rounded ${darkMode ? 'bg-gray-700' : 'bg-white'} shadow-sm`}>
-                <h4 className={`font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>🔧 How To Use CHIPS</h4>
-                <ul className={`list-disc pl-5 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'} space-y-1`}>
+
+              <div
+                className={`p-3 rounded ${darkMode ? 'bg-gray-700' : 'bg-white'} shadow-sm`}
+              >
+                <h4
+                  className={`font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}
+                >
+                  🔧 How To Use CHIPS
+                </h4>
+                <ul
+                  className={`list-disc pl-5 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'} space-y-1`}
+                >
                   <li>Type your questions directly in the chat</li>
-                  <li>Use "/chips your question" in team chat</li>
+                  <li>Use &quot;/chips your question&quot; in team chat</li>
                   <li>Choose the right model for your needs</li>
                   <li>Be specific with your questions</li>
                   <li>Share CHIPS responses with your team</li>
                 </ul>
               </div>
             </div>
-            
-            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-2`}>
-              CHIPS is powered by advanced language models. Results may vary and should be verified for critical tasks.
+
+            <div
+              className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-2`}
+            >
+              CHIPS is powered by advanced language models. Results may vary and
+              should be verified for critical tasks.
             </div>
           </div>
         </div>
@@ -705,7 +760,9 @@ const AIChat: React.FC<AIChatProps> = ({
         className={`flex-1 overflow-y-auto p-4 space-y-6 ${themeStyles.text}`}
       >
         {messages.length === 0 ? (
-          <div className={`flex flex-col items-center justify-center h-full ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          <div
+            className={`flex flex-col items-center justify-center h-full ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}
+          >
             <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-400 to-indigo-500 flex items-center justify-center mb-4">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -722,10 +779,14 @@ const AIChat: React.FC<AIChatProps> = ({
                 />
               </svg>
             </div>
-            <h3 className={`text-lg font-medium mb-1 ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+            <h3
+              className={`text-lg font-medium mb-1 ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}
+            >
               AI Assistant
             </h3>
-            <p className={`text-sm text-center ${darkMode ? 'text-gray-400' : 'text-gray-600'} max-w-md`}>
+            <p
+              className={`text-sm text-center ${darkMode ? 'text-gray-400' : 'text-gray-600'} max-w-md`}
+            >
               I&apos;m here to help with your project. Ask me anything!
             </p>
           </div>
@@ -747,7 +808,9 @@ const AIChat: React.FC<AIChatProps> = ({
                     <span className="text-xs">
                       {msg.model === 'research' ? '📚' : '🧮'}
                     </span>
-                    <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <span
+                      className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                    >
                       Using{' '}
                       {msg.model === 'research' ? 'Research' : 'Reasoning'}{' '}
                       model
@@ -765,11 +828,15 @@ const AIChat: React.FC<AIChatProps> = ({
                   <div className="text-sm">{msg.text}</div>
                 )}
 
-                <div className={`flex items-center justify-between text-xs mt-2 ${
-                  msg.sender === 'AI Assistant'
-                    ? (darkMode ? 'text-gray-400' : 'text-gray-500')
-                    : 'text-blue-200'
-                }`}>
+                <div
+                  className={`flex items-center justify-between text-xs mt-2 ${
+                    msg.sender === 'AI Assistant'
+                      ? darkMode
+                        ? 'text-gray-400'
+                        : 'text-gray-500'
+                      : 'text-blue-200'
+                  }`}
+                >
                   <span>{msg.sender_name || msg.sender}</span>
                   <span>{formatTime(new Date(msg.timestamp))}</span>
                 </div>
@@ -780,15 +847,21 @@ const AIChat: React.FC<AIChatProps> = ({
 
         {isTyping && (
           <div className="flex">
-            <div className={`max-w-3/4 ${themeStyles.messageBg} rounded-2xl px-4 py-2`}>
+            <div
+              className={`max-w-3/4 ${themeStyles.messageBg} rounded-2xl px-4 py-2`}
+            >
               <div className="flex items-center space-x-2 mb-1">
                 <span className="text-xs">{selectedModel.icon}</span>
-                <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                <span
+                  className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                >
                   Using {selectedModel.name} model
                 </span>
               </div>
               <div className="flex space-x-1">
-                <div className={`w-2 h-2 rounded-full ${darkMode ? 'bg-gray-400' : 'bg-gray-400'} animate-bounce`}></div>
+                <div
+                  className={`w-2 h-2 rounded-full ${darkMode ? 'bg-gray-400' : 'bg-gray-400'} animate-bounce`}
+                ></div>
                 <div
                   className={`w-2 h-2 rounded-full ${darkMode ? 'bg-gray-400' : 'bg-gray-400'} animate-bounce`}
                   style={{ animationDelay: '0.2s' }}
@@ -804,7 +877,10 @@ const AIChat: React.FC<AIChatProps> = ({
       </div>
 
       {/* Input */}
-      <form onSubmit={sendMessage} className={`border-t p-3 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+      <form
+        onSubmit={sendMessage}
+        className={`border-t p-3 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}
+      >
         <div className="flex items-center space-x-2">
           <div className="relative flex-1">
             <input
