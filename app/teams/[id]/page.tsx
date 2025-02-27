@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 
 // TypeScript interfaces
 interface User {
@@ -51,9 +51,6 @@ const TeamPage: React.FC = () => {
   const [subscription, setSubscription] = useState<any>(null);
 
   // AI chat state
-  const [aiMessages, setAiMessages] = useState<Message[]>([]);
-  const [aiChatInput, setAiChatInput] = useState<string>("");
-  const [aiIsTyping, setAiIsTyping] = useState<boolean>(false);
   const aiChatRef = useRef<HTMLDivElement>(null);
 
   // Team members
@@ -215,7 +212,7 @@ const TeamPage: React.FC = () => {
     if (aiChatRef.current) {
       aiChatRef.current.scrollTop = aiChatRef.current.scrollHeight;
     }
-  }, [aiMessages]);
+  }, []);
 
   const handleTeamChatSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -237,47 +234,6 @@ const TeamPage: React.FC = () => {
     } else {
       setTeamChatInput("");
     }
-  };
-
-  const handleAiChatSend = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!aiChatInput.trim()) return;
-
-    const userMessage: Message = {
-      id: Date.now(),
-      text: aiChatInput,
-      sender: "You",
-      sender_id: user?.id,
-      timestamp: new Date(),
-      avatar_url: user?.avatar_url || "",
-    };
-
-    setAiMessages((prev) => [...prev, userMessage]);
-    setAiChatInput("");
-
-    setAiIsTyping(true);
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: Date.now() + 1,
-        text: getAIResponse(aiChatInput),
-        sender: "AI Assistant",
-        timestamp: new Date(),
-        avatar_url: "",
-      };
-      setAiMessages((prev) => [...prev, aiResponse]);
-      setAiIsTyping(false);
-    }, 1500);
-  };
-
-  // Mock AI response function
-  const getAIResponse = (input: string): string => {
-    const responses = [
-      `I've analyzed ${team?.project?.PS || "your project"} and I think your question about "${input}" is very insightful.`,
-      `For "${input}", I'd suggest considering further improvements.`,
-      `Great point about "${input}". Let's explore that further.`,
-      `Regarding "${input}", iterative testing might be the key.`,
-    ];
-    return responses[Math.floor(Math.random() * responses.length)];
   };
 
   const formatTime = (date: Date): string => {
@@ -587,8 +543,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
   const [emailExists, setEmailExists] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Basic email validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // Wrap emailRegex in useMemo
+  const emailRegex = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/, []);
 
   // Debounced check for existing email in "profiles"
   useEffect(() => {
@@ -614,7 +570,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [email]);
+  }, [email, emailRegex]);
 
   const handleInvite = async () => {
     setError("");

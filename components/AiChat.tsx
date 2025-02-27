@@ -220,7 +220,7 @@ const AIChat: React.FC<AIChatProps> = ({ projectName }) => {
 
   // Custom components for ReactMarkdown
   const components = {
-    code({ node, inline, className, children, ...props }: any) {
+    code({ inline, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || '');
       return !inline && match ? (
         <CodeBlock
@@ -236,7 +236,7 @@ const AIChat: React.FC<AIChatProps> = ({ projectName }) => {
         </code>
       );
     },
-    a: ({ node, ...props }: any) => (
+    a: ({ ...props }: any) => (
       <a
         className="text-blue-600 underline hover:text-blue-800"
         target="_blank"
@@ -244,24 +244,24 @@ const AIChat: React.FC<AIChatProps> = ({ projectName }) => {
         {...props}
       />
     ),
-    h1: ({ node, ...props }: any) => (
+    h1: ({ ...props }: any) => (
       <h1 className="text-2xl font-bold mt-4 mb-2" {...props} />
     ),
-    h2: ({ node, ...props }: any) => (
+    h2: ({ ...props }: any) => (
       <h2 className="text-xl font-bold mt-3 mb-2" {...props} />
     ),
-    h3: ({ node, ...props }: any) => (
+    h3: ({ ...props }: any) => (
       <h3 className="text-lg font-bold mt-3 mb-1" {...props} />
     ),
-    p: ({ node, ...props }: any) => <p className="mb-2" {...props} />,
-    ul: ({ node, ...props }: any) => (
+    p: ({ ...props }: any) => <p className="mb-2" {...props} />,
+    ul: ({ ...props }: any) => (
       <ul className="list-disc pl-5 mb-2" {...props} />
     ),
-    ol: ({ node, ...props }: any) => (
+    ol: ({ ...props }: any) => (
       <ol className="list-decimal pl-5 mb-2" {...props} />
     ),
-    li: ({ node, ...props }: any) => <li className="mb-1" {...props} />,
-    blockquote: ({ node, ...props }: any) => (
+    li: ({ ...props }: any) => <li className="mb-1" {...props} />,
+    blockquote: ({ ...props }: any) => (
       <blockquote
         className="border-l-4 border-gray-300 pl-4 italic my-2"
         {...props}

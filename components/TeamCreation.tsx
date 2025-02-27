@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,8 +27,8 @@ const TeamCreationModal: React.FC<TeamCreationModalProps> = ({
   const [emailExists, setEmailExists] = useState<boolean>(false);
   const [checkingEmail, setCheckingEmail] = useState<boolean>(false);
 
-  // Basic email validation regex
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // Wrap emailRegex in useMemo
+  const emailRegex = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/, []);
 
   // Debounced effect to check if the email exists in the system
   useEffect(() => {
@@ -52,7 +52,7 @@ const TeamCreationModal: React.FC<TeamCreationModalProps> = ({
       setCheckingEmail(false);
     }, 500); // 500ms debounce
     return () => clearTimeout(timer);
-  }, [memberEmail]);
+  }, [memberEmail, emailRegex]);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMemberEmail(e.target.value);
