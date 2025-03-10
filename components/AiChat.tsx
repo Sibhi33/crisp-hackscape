@@ -1,7 +1,7 @@
 'use client';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import CodeBlock from './CodeBlock';
 
@@ -74,8 +74,7 @@ const AIChat: React.FC<AIChatProps> = ({
   const realtimeSubscriptionRef = useRef<any>(null);
   const [conversationSummary, setConversationSummary] = useState<string>('');
 
-  // Theme-based styles
-  const themeStyles = {
+  const [themeStyles, _setThemeStyles] = useState({
     background: darkMode ? 'bg-gray-900' : 'bg-white',
     text: darkMode ? 'text-white' : 'text-black',
     borderColor: darkMode ? 'border-gray-700' : 'border-gray-200',
@@ -85,12 +84,233 @@ const AIChat: React.FC<AIChatProps> = ({
     inputBg: darkMode ? 'bg-gray-800' : 'bg-white',
     inputBorder: darkMode ? 'border-gray-600' : 'border-gray-300',
     inputText: darkMode ? 'text-white' : 'text-gray-900',
-    infoPanel: darkMode
+    modelSelectBg: darkMode
       ? 'bg-gray-800 text-gray-200'
       : 'bg-gray-100 text-gray-800',
-  };
+  });
 
-  // Welcome message from AI
+  // Format the AI response based on model
+  const formatAIResponse = useCallback((text: string, modelId: string) => {
+    // Format deepseek model responses with <think> tags
+    if (modelId === 'reasoning' && text.includes('<think>')) {
+      text = text.replace(/<think>[\s\S]*?<\/think>/g, (match) => {
+        // Extract the content inside the think tags
+        const thinkContent = match.replace(/<think>|<\/think>/g, '');
+        return `<div class="thinking-block p-3 my-2 border-l-4 border-indigo-500 bg-opacity-20 ${darkMode ? 'bg-indigo-900' : 'bg-indigo-50'}">
+            <strong>Thinking:</strong>
+            <div class="pl-2 mt-1">${thinkContent}</div>`;
+      });
+    }
+
+    // Improved link formatting using our special format LINK[URL|TEXT]
+    text = text.replace(/LINK\[(https?:\/\/[^|]+)\|([^\]]+)\]/g, '[$2]($1)');
+
+    return text;
+  }, [darkMode]);
+
+  // Create system prompt for AI
+  const createSystemPrompt = useCallback((modelId: string, projectName?: string) => {
+    const linkInstructions = `
+      When you want to include links in your response, use this exact format: 
+      LINK[URL|TEXT]
+      For example: LINK[https://example.com|Example Website] will be displayed as a clickable link.
+      Always include the full URL with protocol (https:// or http://).
+    `;
+
+    // Return model-specific system prompts
+    if (modelId === 'reasoning') {
+      return `You are a technical AI assistant specializing in software development. You help developers with coding questions.
+              You can showcase your reasoning skills by using <think></think> tags for your thought process.
+              ${linkInstructions}`;
+    } else {
+      return `You are a helpful AI assistant for the project ${projectName || 'unknown'}. 
+              Provide concise, accurate information.
+              ${linkInstructions}`;
+    }
+  }, []);
+
+  // Setup realtime subscription
+  const setupRealtimeSubscription = useCallback(async () => {
+    if (!teamId) return;
+
+    // Remove existing subscription if it exists
+    if (realtimeSubscriptionRef.current) {
+      supabase.removeChannel(realtimeSubscriptionRef.current);
+    }
+
+    // Create new subscription
+    const channel = supabase
+      .channel(`ai_messages_${teamId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'ai_messages',
+          filter: `team_id=eq.${teamId}`,
+        },
+        async (payload) => {
+          // Skip messages from the current user entirely to avoid duplicates
+          // These are already added to the local state when sendMessage is called
+          if (payload.new.sender_id === user?.id) {
+            return;
+          }
+
+          // For messages from other users, fetch the full record including profile
+          const { data, error } = await supabase
+            .from('ai_messages')
+            .select(`
+              id,
+              user_message,
+              ai_message,
+              created_at,
+              sender_id,
+              model,
+              profiles!sender_id(
+                display_name,
+                email,
+                avatar_url
+              )
+            `)
+            .eq('id', payload.new.id)
+            .single();
+
+          if (error) {
+            console.error('Error fetching new message details:', error);
+            return;
+          }
+
+          // Add user message
+          if (data.user_message) {
+            // Fix the typing issue with profile data
+            const profile = data.profiles as unknown as { 
+              display_name: string; 
+              email: string; 
+              avatar_url: string 
+            };
+            const senderName = profile.display_name || profile.email || 'User';
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: `${data.id}-user`,
+                text: data.user_message,
+                sender: senderName,
+                sender_id: data.sender_id,
+                sender_name: senderName,
+                avatar_url: profile.avatar_url,
+                timestamp: new Date(data.created_at),
+              },
+            ]);
+          }
+
+          // Add AI response
+          if (data.ai_message) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: `${data.id}-ai`,
+                text: data.ai_message,
+                sender: 'AI Assistant',
+                timestamp: new Date(data.created_at),
+                model: data.model || 'Unknown',
+              },
+            ]);
+          }
+        }
+      )
+      .subscribe();
+
+    realtimeSubscriptionRef.current = channel;
+  }, [user?.id, teamId]);
+
+  // Handle external message
+  const handleExternalMessage = useCallback(async (text: string) => {
+    if (!text.trim()) return;
+
+    const userMessage: Message = {
+      id: Date.now(),
+      text: text,
+      sender: user?.user_metadata?.display_name || 'You',
+      sender_id: user?.id,
+      sender_name: user?.user_metadata?.display_name || 'You',
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setIsTyping(true);
+
+    try {
+      // Call to the Groq API via backend proxy
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: selectedModel.model,
+          messages: [
+            {
+              role: 'system',
+              content: createSystemPrompt(selectedModel.id, projectName),
+            },
+            ...messages.map((msg) => ({
+              role: msg.sender === 'AI Assistant' ? 'assistant' : 'user',
+              content: msg.text,
+            })),
+            { role: 'user', content: text },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI response');
+      }
+
+      const data = await response.json();
+      const aiResponse = formatAIResponse(data.response, selectedModel.id);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          text: aiResponse,
+          sender: 'AI Assistant',
+          timestamp: new Date(),
+          model: selectedModel.id,
+        },
+      ]);
+
+      // Notify parent that message has been processed
+      if (onMessageProcessed) {
+        onMessageProcessed();
+      }
+    } catch (error) {
+      console.error('AI Chat Error:', error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          text: 'Sorry, I encountered an error. Please try again later.',
+          sender: 'AI Assistant',
+          timestamp: new Date(),
+          model: selectedModel.id,
+        },
+      ]);
+    } finally {
+      setIsTyping(false);
+    }
+  }, [
+    user?.id,
+    user?.user_metadata?.display_name,
+    messages, 
+    projectName, 
+    selectedModel.id, 
+    selectedModel.model, 
+    createSystemPrompt, 
+    formatAIResponse, 
+    onMessageProcessed
+  ]);
+
+  // Add welcome message if there are no messages
   useEffect(() => {
     if (messages.length === 0) {
       setMessages([
@@ -110,7 +330,7 @@ const AIChat: React.FC<AIChatProps> = ({
     if (message && message.trim() !== '') {
       handleExternalMessage(message);
     }
-  }, [message]);
+  }, [message, handleExternalMessage]);
 
   // Fetch previous messages
   useEffect(() => {
@@ -229,215 +449,7 @@ const AIChat: React.FC<AIChatProps> = ({
         supabase.removeChannel(realtimeSubscriptionRef.current);
       }
     };
-  }, [teamId]);
-
-  // Setup realtime subscription
-  const setupRealtimeSubscription = async () => {
-    if (!teamId) return;
-
-    // Remove existing subscription if it exists
-    if (realtimeSubscriptionRef.current) {
-      supabase.removeChannel(realtimeSubscriptionRef.current);
-    }
-
-    // Create new subscription
-    const channel = supabase
-      .channel(`ai_messages_${teamId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'ai_messages',
-          filter: `team_id=eq.${teamId}`,
-        },
-        async (payload) => {
-          // Skip messages from the current user entirely to avoid duplicates
-          // These are already added to the local state when sendMessage is called
-          if (payload.new.sender_id === user?.id) {
-            return;
-          }
-
-          // For messages from other users, fetch the full record including profile
-          const { data, error } = await supabase
-            .from('ai_messages')
-            .select(`
-              id,
-              user_message,
-              ai_message,
-              created_at,
-              sender_id,
-              profiles!sender_id(
-                display_name,
-                email,
-                avatar_url
-              )
-            `)
-            .eq('id', payload.new.id)
-            .single();
-
-          if (error) {
-            console.error('Error fetching new message details:', error);
-            return;
-          }
-
-          if (data) {
-            // Debug what we got back
-            console.log('Realtime message data:', data);
-            
-            const newMessages: Message[] = [];
-
-            // Add user message
-            if (data.user_message) {
-              // Check various profile formats and log what we find
-              const profilesExist = !!data.profiles;
-              const profilesIsArray = Array.isArray(data.profiles);
-              const profilesHasItems = profilesIsArray && data.profiles.length > 0;
-              const profilesIsObject = typeof data.profiles === 'object' && !Array.isArray(data.profiles);
-              
-              console.log(`Realtime message ${data.id} profile checks:`, {
-                exists: profilesExist, 
-                isArray: profilesIsArray,
-                hasItems: profilesHasItems,
-                isObject: profilesIsObject
-              });
-              
-              // Get display name using various methods to see what works
-              let displayName = 'Team member';
-              
-              if (profilesIsArray && profilesHasItems) {
-                displayName = data.profiles[0].display_name || data.profiles[0].email || 'Team member';
-              } else if (profilesIsObject) {
-                displayName = (data.profiles as any).display_name || (data.profiles as any).email || 'Team member';
-              }
-              
-              newMessages.push({
-                id: `${data.id}-user`,
-                text: data.user_message,
-                sender:
-                  data.sender_id === user?.id
-                    ? 'You'
-                    : 'Team member',
-                sender_id: data.sender_id,
-                sender_name: data.sender_id === user?.id 
-                  ? (user?.user_metadata?.display_name || 'You')
-                  : displayName,
-                timestamp: new Date(data.created_at),
-                avatar_url: profilesIsArray && profilesHasItems
-                  ? data.profiles[0].avatar_url
-                  : profilesIsObject
-                    ? (data.profiles as any).avatar_url
-                    : undefined,
-              });
-              
-              // Log what we decided to use
-              console.log(`Using display name for realtime message ${data.id}:`, displayName);
-            }
-            
-            // Add AI message
-            if (data.ai_message) {
-              newMessages.push({
-                id: `${data.id}-ai`,
-                text: data.ai_message,
-                sender: 'AI Assistant',
-                sender_id: data.sender_id,
-                sender_name: 'AI Assistant',
-                timestamp: new Date(data.created_at),
-                model: (data as any).model || 'research',
-              });
-            }
-
-            if (newMessages.length > 0) {
-              setMessages((prevMessages) => [...prevMessages, ...newMessages]);
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    realtimeSubscriptionRef.current = channel;
-  };
-
-  // Handle message sent from the team chat via /chips command
-  const handleExternalMessage = async (text: string) => {
-    if (!text.trim()) return;
-
-    const userMessage: Message = {
-      id: Date.now(),
-      text: text,
-      sender: user?.user_metadata?.display_name || 'You',
-      sender_id: user?.id,
-      sender_name: user?.user_metadata?.display_name || 'You',
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setIsTyping(true);
-
-    try {
-      // Call to the Groq API via backend proxy
-      const response = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: selectedModel.model,
-          messages: [
-            {
-              role: 'system',
-              content: createSystemPrompt(selectedModel.id, projectName),
-            },
-            ...messages.map((msg) => ({
-              role: msg.sender === 'AI Assistant' ? 'assistant' : 'user',
-              content: msg.text,
-            })),
-            { role: 'user', content: text },
-          ],
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to get AI response');
-      }
-
-      const data = await response.json();
-      const aiResponse = formatAIResponse(data.response, selectedModel.id);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          text: aiResponse,
-          sender: 'AI Assistant',
-          timestamp: new Date(),
-          model: selectedModel.id,
-        },
-      ]);
-
-      // Notify parent that message has been processed
-      if (onMessageProcessed) {
-        onMessageProcessed();
-      }
-    } catch (error) {
-      console.error('AI Chat Error:', error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          text: 'Sorry, I encountered an error. Please try again later.',
-          sender: 'AI Assistant',
-          timestamp: new Date(),
-          model: selectedModel.id,
-        },
-      ]);
-
-      if (onMessageProcessed) {
-        onMessageProcessed();
-      }
-    } finally {
-      setIsTyping(false);
-    }
-  };
+  }, [teamId, setupRealtimeSubscription, user?.id, user?.user_metadata?.display_name]);
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -669,47 +681,6 @@ const AIChat: React.FC<AIChatProps> = ({
     }
   };
 
-  const formatAIResponse = (text: string, modelId: string) => {
-    // Format deepseek model responses with <think> tags
-    if (modelId === 'reasoning' && text.includes('<think>')) {
-      text = text.replace(/<think>[\s\S]*?<\/think>/g, (match) => {
-        // Extract the content inside the think tags
-        const thinkContent = match.replace(/<think>|<\/think>/g, '');
-        return `<div class="thinking-block p-3 my-2 border-l-4 border-indigo-500 bg-opacity-20 ${darkMode ? 'bg-indigo-900' : 'bg-indigo-50'}">
-            <strong>Thinking:</strong>
-            <div class="pl-2 mt-1">${thinkContent}</div>`;
-      });
-    }
-
-    // Improved link formatting using our special format LINK[URL|TEXT]
-    text = text.replace(/LINK\[(https?:\/\/[^|]+)\|([^\]]+)\]/g, '[$2]($1)');
-
-    return text;
-  };
-
-  const createSystemPrompt = (modelId: string, projectName?: string) => {
-    const linkInstructions = `
-      When you want to include links in your response, use this exact format: 
-      LINK[URL|TEXT]
-      For example: LINK[https://example.com|Example Website] will be displayed as a clickable link.
-      Always include the full URL with protocol (https:// or http://).
-    `;
-
-    if (modelId === 'research') {
-      return `You are "CHIPS" also known as "Collaborative Hackathon Intelligence with Project Support" an AI research assistant helping with the project "${projectName}". 
-              Provide accurate, well-researched information based on reliable sources.
-              Format your responses with markdown for readability.
-              Clearly indicate when you are speculating or uncertain.
-              ${linkInstructions}`;
-    } else {
-      return `You are  "CHIPS" also known as "Collaborative Hackathon Intelligence with Project Support" an AI reasoning assistant specialized in coding and mathematical problem-solving for the project "${projectName}".
-              Show your work step-by-step using <think></think> tags when solving complex problems.
-              Format code examples with appropriate markdown syntax.
-              Be precise and logical in your explanations.
-              ${linkInstructions}`;
-    }
-  };
-
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
@@ -725,7 +696,7 @@ const AIChat: React.FC<AIChatProps> = ({
 
   // Custom components for ReactMarkdown
   const components = {
-    code({ node, inline, className, children, ...props }: any) {
+    code({ _node, inline, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || '');
       return !inline && match ? (
         <CodeBlock
@@ -741,7 +712,7 @@ const AIChat: React.FC<AIChatProps> = ({
         </code>
       );
     },
-    a: ({ node, ...props }: any) => (
+    a: ({ _node, ...props }: any) => (
       <a
         className={`${darkMode ? 'text-blue-400' : 'text-blue-600'} underline hover:${darkMode ? 'text-blue-300' : 'text-blue-800'} cursor-pointer`}
         target="_blank"
@@ -756,39 +727,39 @@ const AIChat: React.FC<AIChatProps> = ({
         {...props}
       />
     ),
-    h1: ({ node, ...props }: any) => (
+    h1: ({ _node, ...props }: any) => (
       <h1
         className={`text-2xl font-bold mt-4 mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}
         {...props}
       />
     ),
-    h2: ({ node, ...props }: any) => (
+    h2: ({ _node, ...props }: any) => (
       <h2
         className={`text-xl font-bold mt-3 mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}
         {...props}
       />
     ),
-    h3: ({ node, ...props }: any) => (
+    h3: ({ _node, ...props }: any) => (
       <h3
         className={`text-lg font-bold mt-3 mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}
         {...props}
       />
     ),
-    p: ({ node, ...props }: any) => <p className="mb-2" {...props} />,
-    ul: ({ node, ...props }: any) => (
+    p: ({ _node, ...props }: any) => <p className="mb-2" {...props} />,
+    ul: ({ _node, ...props }: any) => (
       <ul className="list-disc pl-5 mb-2" {...props} />
     ),
-    ol: ({ node, ...props }: any) => (
+    ol: ({ _node, ...props }: any) => (
       <ol className="list-decimal pl-5 mb-2" {...props} />
     ),
-    li: ({ node, ...props }: any) => <li className="mb-1" {...props} />,
-    blockquote: ({ node, ...props }: any) => (
+    li: ({ _node, ...props }: any) => <li className="mb-1" {...props} />,
+    blockquote: ({ _node, ...props }: any) => (
       <blockquote
         className={`border-l-4 ${darkMode ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-gray-50'} pl-4 py-1 italic my-2 rounded`}
         {...props}
       />
     ),
-    div: ({ node, ...props }: any) => {
+    div: ({ _node, ...props }: any) => {
       // Check if this is a thinking block
       if (props.className && props.className.includes('thinking-block')) {
         return <div {...props} />;
@@ -888,7 +859,7 @@ const AIChat: React.FC<AIChatProps> = ({
       {/* CHIPS Info Panel */}
       {showChipsInfo && (
         <div
-          className={`p-4 ${themeStyles.infoPanel} border-b ${themeStyles.borderColor} transition-all ease-in-out duration-300`}
+          className={`p-4 ${themeStyles.modelSelectBg} border-b ${themeStyles.borderColor} transition-all ease-in-out duration-300`}
         >
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center mb-3">

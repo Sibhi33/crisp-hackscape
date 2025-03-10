@@ -1,70 +1,61 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
 import { Navbar } from '@/components/Navbar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  SearchIcon, 
-  Copy, 
-  CheckIcon, 
-  Code, 
-  Database, 
-  Server, 
-  Globe, 
-  Zap,
-  FileCode2,
-  Laptop,
-  BookOpen,
-  Layout,
-  Boxes,
-  Cloud,
-  Lock,
-  Smartphone,
-  Terminal,
-  Cpu,
-  LineChart,
-  MessageSquare,
-  Share2,
-  ShieldCheck,
-  Workflow,
-  Palette,
-  Grid,
-  Video,
-  BookMarked,
-  Flower2,
-  Layers,
-  CloudLightning,
-  Flame,
-  Package,
-  Leaf,
-  TerminalSquare,
-  Sparkles,
-  ArrowRight
-} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+    BookMarked,
+    BookOpen,
+    Boxes,
+    CheckIcon,
+    Cloud,
+    CloudLightning,
+    Code,
+    Copy,
+    Database,
+    FileCode2,
+    Flame,
+    Flower2,
+    Globe,
+    Grid,
+    Laptop,
+    Layers,
+    Layout,
+    Leaf,
+    Package,
+    Palette,
+    SearchIcon,
+    Server,
+    Sparkles,
+    TerminalSquare,
+    Video,
+    Workflow,
+    Zap,
+} from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 // Add animation CSS
 const animationStyles = `
@@ -767,7 +758,7 @@ const SectionHeader = ({ title, subtitle }: { title: string; subtitle: string })
 );
 
 const ResourcesPage = () => {
-  const [activeTab, setActiveTab] = useState('ui');
+  const [_activeTab, setActiveTab] = useState('ui');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
   const [selectedProjectType, setSelectedProjectType] = useState<string>('');
@@ -1219,7 +1210,7 @@ const ResourcesPage = () => {
                       <Flame className="h-5 w-5 text-blue-600" />
                       <h3 className="font-semibold text-slate-900">Firebase</h3>
                     </div>
-                    <p className="text-sm text-slate-700">Google's platform for app development with ready-made backend services</p>
+                    <p className="text-sm text-slate-700">Google&apos;s platform for app development with ready-made backend services</p>
                   </a>
                   <a href="https://planetscale.com" target="_blank" rel="noopener noreferrer"
                      className="block p-4 rounded-lg border border-slate-200 hover-lift glow-on-hover gradient-border transition-all">

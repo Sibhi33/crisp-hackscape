@@ -15,6 +15,7 @@ interface Team {
   id: string;
   team_name: string;
   created_at?: string;
+  created_by?: string;
   members_count?: number;
   project?: {
     PS: string;
@@ -63,22 +64,27 @@ const TeamsPage: React.FC = () => {
       // Now, fetch teams using the built filter and join the related project data
       const { data: teamData, error: teamError } = await supabase
         .from('teams')
-        .select('*, project:projects(PS,PSdescription)')
+        .select('id, team_name, created_at, created_by, project:projects(PS,PSdescription)')
         .or(filter);
 
       if (teamError) {
         console.error('Error fetching teams:', teamError);
       } else {
-        // For each team, count its members
+        // Transform data to ensure project is an object, not an array
         const teamsWithMemberCount = await Promise.all(
-          (teamData || []).map(async (team) => {
-            const { count, error: _error } = await supabase
+          teamData.map(async (team: any) => {
+            // Get member count for this team
+            const { count, error: _countError } = await supabase
               .from('team_members')
-              .select('*', { count: 'exact', head: true })
+              .select('team_id', { count: 'exact' })
               .eq('team_id', team.id);
               
+            // Ensure project is an object, not an array
+            const project = team.project && team.project.length > 0 ? team.project[0] : team.project;
+            
             return {
               ...team,
+              project: project, // Use the first item if it's an array, or keep as is if already an object
               members_count: count || 0
             };
           })
