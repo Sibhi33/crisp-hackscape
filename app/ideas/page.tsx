@@ -1,46 +1,67 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/Navbar';
 import TeamCreationModal from '@/components/TeamCreation';
-import { PlusIcon, ShareIcon, TrashIcon, UsersIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { PlusIcon, ShareIcon, TrashIcon, UsersIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-const IdeasPage = () => {
+interface Project {
+  id: number;
+  user: string;
+  PSdescription: string;
+  createdat: string;
+  PS: string;
+  PSotherdetails: string;
+  APIresponse: string;
+  // add additional project properties if needed
+}
+
+interface Team {
+  id: number;
+  project_id: number;
+  team_name: string;
+  created_by: string;
+  created_at: string;
+  // add additional team properties if needed
+}
+
+const IdeasPage: React.FC = () => {
   const { user } = useAuth();
-  const [projects, setProjects] = useState([]);
-  const [teams, setTeams] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const router = useRouter();
 
-  // Modal states
-  const [selectedProject, setSelectedProject] = useState(null);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [teamModalProject, setTeamModalProject] = useState(null);
-  const [copied, setCopied] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  // Modal states 
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [showShareModal, setShowShareModal] = useState<boolean>(false);
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [teamModalProject, setTeamModalProject] = useState<Project | null>(null);
+  const [copied, setCopied] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
     const fetchProjects = async () => {
       setIsLoading(true);
       if (user) {
         const { data, error } = await supabase
-          .from('projects')
-          .select('*')
-          .eq('user', user.id)
-          .order('createdat', { ascending: false });
-        
-        if (error) {
-          console.error('Error fetching projects:', error);
-        } else {
-          setProjects(data || []);
-        }
+        .from('projects')
+        .select('*')
+        .eq('user', user.id)
+        .order('createdat', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching projects:', error);
+      } else {
+        setProjects((data as Project[]) || []);
+      }
+
       }
       setIsLoading(false);
     };
@@ -53,32 +74,34 @@ const IdeasPage = () => {
       if (projects.length > 0) {
         const projectIds = projects.map((p) => p.id);
         const { data, error } = await supabase
-          .from('teams')
-          .select('*')
-          .in('project_id', projectIds);
-        
-        if (error) {
-          console.error('Error fetching teams:', error);
-        } else {
-          setTeams(data || []);
-        }
+        .from('teams')
+        .select('*')
+        .in('project_id', projectIds);
+      
+      if (error) {
+        console.error('Error fetching teams:', error);
+      } else {
+        setTeams((data as Team[]) || []);
+      }
+      
       }
     };
 
     fetchTeams();
   }, [projects]);
 
-  const handleCardClick = (id) => {
+  const handleCardClick = (id: string) => {
     router.push(`/ideas/${id}`);
   };
 
-  const handleShare = (project, e) => {
+  const handleShare = (project: Project, e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     setSelectedProject(project);
     setShowShareModal(true);
   };
 
   const handleCopy = async () => {
+    if (!selectedProject) return;
     const shareLink = `${window.location.origin}/ideas/${selectedProject.id}`;
     try {
       await navigator.clipboard.writeText(shareLink);
@@ -89,13 +112,14 @@ const IdeasPage = () => {
     }
   };
 
-  const handleDeleteClick = (project, e) => {
+  const handleDeleteClick = (project: Project, e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     setSelectedProject(project);
     setShowDeleteModal(true);
   };
 
   const handleDelete = async () => {
+    if (!selectedProject) return;
     try {
       const { error } = await supabase
         .from('projects')
@@ -113,24 +137,24 @@ const IdeasPage = () => {
     }
   };
 
-  const handleOpenTeamModal = (project, e) => {
+  const handleOpenTeamModal = (project: Project, e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     setTeamModalProject(project);
   };
 
-  const handleGoToTeam = (team, e) => {
+  const handleGoToTeam = (team: Team, e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     router.push(`/teams/${team.id}`);
   };
 
-  const handleTeamCreated = (newTeam) => {
+  const handleTeamCreated = (newTeam: Team) => {
     setTeams((prev) => [...prev, newTeam]);
     setTeamModalProject(null);
   };
 
   // Filter projects based on search query
   const filteredProjects = searchQuery 
-    ? projects.filter(project => 
+    ? projects.filter((project) => 
         project.PS.toLowerCase().includes(searchQuery.toLowerCase()))
     : projects;
 
@@ -165,18 +189,31 @@ const IdeasPage = () => {
                 type="text"
                 placeholder="Search projects..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setSearchQuery(e.target.value)
+                }
                 className="pl-10 w-full"
               />
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-gray-400"
+                >
                   <circle cx="11" cy="11" r="8"></circle>
                   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
               </div>
             </div>
             
-            <Button 
+            <Button
               onClick={() => router.push('/assistant')}
               className="w-full sm:w-auto flex items-center gap-2"
             >
@@ -196,14 +233,27 @@ const IdeasPage = () => {
             {searchQuery ? (
               <>
                 <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-blue-500"
+                  >
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   </svg>
                 </div>
-                <h2 className="text-xl font-semibold text-gray-800 mb-2">No matching projects</h2>
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                  No matching projects
+                </h2>
                 <p className="text-gray-600 mb-4">
-                  We couldn't find any projects matching "{searchQuery}"
+                  We couldn&apos;t find any projects matching &quot;{searchQuery}&quot;
                 </p>
                 <Button variant="outline" onClick={() => setSearchQuery('')}>
                   Clear Search
@@ -214,7 +264,9 @@ const IdeasPage = () => {
                 <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
                   <PlusIcon className="h-8 w-8 text-blue-500" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-800 mb-2">No projects yet</h2>
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                  No projects yet
+                </h2>
                 <p className="text-gray-600 mb-4">
                   Get started by creating your first project
                 </p>
@@ -235,7 +287,7 @@ const IdeasPage = () => {
                 <Card
                   key={project.id}
                   className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer bg-white"
-                  onClick={() => handleCardClick(project.id)}
+                  onClick={() => handleCardClick(String(project.id))}
                 >
                   <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4">
                     <CardTitle className="text-xl font-semibold line-clamp-2">
@@ -245,7 +297,18 @@ const IdeasPage = () => {
                   
                   <CardContent className="p-5 flex flex-col space-y-4">
                     <div className="text-sm text-gray-500 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="mr-1.5"
+                      >
                         <circle cx="12" cy="12" r="10"></circle>
                         <polyline points="12 6 12 12 16 14"></polyline>
                       </svg>
@@ -263,7 +326,9 @@ const IdeasPage = () => {
                         variant="outline"
                         size="sm"
                         className="flex-1 flex items-center justify-center gap-1"
-                        onClick={(e) => handleShare(project, e)}
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+                          handleShare(project, e)
+                        }
                       >
                         <ShareIcon size={14} /> Share
                       </Button>
@@ -272,7 +337,9 @@ const IdeasPage = () => {
                         variant="outline"
                         size="sm"
                         className="flex-1 flex items-center justify-center gap-1 text-red-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-                        onClick={(e) => handleDeleteClick(project, e)}
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+                          handleDeleteClick(project, e)
+                        }
                       >
                         <TrashIcon size={14} /> Delete
                       </Button>
@@ -282,7 +349,9 @@ const IdeasPage = () => {
                       <Button
                         variant="default"
                         className="w-full flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600"
-                        onClick={(e) => handleGoToTeam(teamForProject, e)}
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+                          handleGoToTeam(teamForProject, e)
+                        }
                       >
                         <UsersIcon size={16} /> Go to Team
                       </Button>
@@ -290,7 +359,9 @@ const IdeasPage = () => {
                       <Button
                         variant="outline"
                         className="w-full flex items-center justify-center gap-2 border-dashed"
-                        onClick={(e) => handleOpenTeamModal(project, e)}
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+                          handleOpenTeamModal(project, e)
+                        }
                       >
                         <UsersIcon size={16} /> Create Team
                       </Button>
@@ -320,8 +391,8 @@ const IdeasPage = () => {
                 value={`${window.location.origin}/ideas/${selectedProject.id}`}
                 className="bg-gray-50"
               />
-              <Button 
-                onClick={handleCopy} 
+              <Button
+                onClick={handleCopy}
                 variant="outline"
                 className={`shrink-0 ${copied ? 'bg-green-50 text-green-600 border-green-200' : ''}`}
               >
@@ -329,10 +400,7 @@ const IdeasPage = () => {
               </Button>
             </div>
             <div className="flex justify-end">
-              <Button
-                variant="outline"
-                onClick={() => setShowShareModal(false)}
-              >
+              <Button variant="outline" onClick={() => setShowShareModal(false)}>
                 Close
               </Button>
             </div>
@@ -348,13 +416,10 @@ const IdeasPage = () => {
               Delete Project
             </h2>
             <p className="mb-6 text-gray-600">
-              Are you sure you want to delete "{selectedProject.PS}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{selectedProject.PS}&quot;? This action cannot be undone.
             </p>
             <div className="flex justify-end space-x-3">
-              <Button
-                variant="outline"
-                onClick={() => setShowDeleteModal(false)}
-              >
+              <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
                 Cancel
               </Button>
               <Button
@@ -381,7 +446,17 @@ const IdeasPage = () => {
       {/* Toast notification for success messages */}
       {copied && (
         <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-3 rounded-md shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-bottom-5 duration-300">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
             <polyline points="22 4 12 14.01 9 11.01"></polyline>
           </svg>

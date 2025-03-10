@@ -1,6 +1,6 @@
 "use client";
 import { cn } from "@/lib/utils";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createNoise3D } from "simplex-noise";
 
 export const WavyBackground = ({
@@ -116,7 +116,7 @@ export const WavyBackground = ({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [blur, waveColors, waveWidth, backgroundFill, waveOpacity, getSpeed]);
+  }, [blur, waveColors, waveWidth, backgroundFill, waveOpacity, getSpeed, noise]);
 
   return (
     <div

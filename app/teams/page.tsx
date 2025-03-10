@@ -72,7 +72,7 @@ const TeamsPage: React.FC = () => {
         // For each team, count its members
         const teamsWithMemberCount = await Promise.all(
           (teamData || []).map(async (team) => {
-            const { count, error } = await supabase
+            const { count, error: _error } = await supabase
               .from('team_members')
               .select('*', { count: 'exact', head: true })
               .eq('team_id', team.id);

@@ -1,20 +1,20 @@
 "use client";
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { AlertCircle, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Navbar } from '@/components/Navbar';
-import FormattedAnalysisCard from '@/components/FormatttedCard';
 import { analyzeIdea, ApiResponse } from '@/app/api/analysisApi';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/contexts/AuthContext';
+import FormattedAnalysisCard from '@/components/FormatttedCard';
+import { Navbar } from '@/components/Navbar';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
 import { WavyBackground } from '@/components/ui/wavy-background';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { motion } from 'framer-motion';
+import { AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
 
 const GroqStepperPage = () => {
   const [step, setStep] = useState(0);
@@ -163,7 +163,7 @@ const GroqStepperPage = () => {
             <Alert className="bg-blue-50 dark:bg-blue-900 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                You're almost done! Review your inputs before submitting for analysis.
+                You&apos;re almost done! Review your inputs before submitting for analysis.
               </AlertDescription>
             </Alert>
           </div>
