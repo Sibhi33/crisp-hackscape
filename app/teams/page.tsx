@@ -92,13 +92,23 @@ const TeamsPage: React.FC = () => {
     fetchTeams();
   }, [user]);
 
-  // Filter teams based on search query
-  const filteredTeams = searchQuery
-    ? teams.filter(team => 
-        team.team_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  // Filter teams based on search query and filter type
+  const filteredTeams = teams.filter(team => {
+    // First apply search filter if query exists
+    const matchesSearch = searchQuery
+      ? team.team_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
         (team.project?.PS && team.project.PS.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
-    : teams;
+      : true;
+
+    // Then apply team filter
+    if (filter === 'my') {
+      // Only show teams where user is the creator
+      return matchesSearch && team.created_by === user?.id;
+    }
+    
+    // For 'all' filter, show all teams the user is a member of (which is already filtered in fetchTeams)
+    return matchesSearch;
+  });
 
   return (
     <div className="min-h-screen w-full overflow-hidden relative flex flex-col">

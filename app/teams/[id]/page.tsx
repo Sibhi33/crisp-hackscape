@@ -149,13 +149,13 @@ const TeamPage: React.FC = () => {
     );
   };
 
-  // Function to scroll to bottom
+  // Modified scrollToBottom function
   const scrollToBottom = (smooth = false) => {
-    if (teamChatRef.current) {
-      teamChatRef.current.scrollTo({
-        top: teamChatRef.current.scrollHeight,
-        behavior: smooth ? 'smooth' : 'auto',
-      });
+    const container = teamChatRef.current;
+    if (!container) return;
+    // Only auto-scroll if user is near the bottom (within a 50px threshold)
+    if (container.scrollHeight - container.scrollTop - container.clientHeight <= 50) {
+      container.scrollTo({ top: container.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
     }
   };
 
@@ -547,7 +547,7 @@ const TeamPage: React.FC = () => {
 
                 return (
                   <div
-                    key={msg.id}
+                    key={`${msg.id}-${index}`}
                     className={`flex ${showHeader ? 'mt-4' : 'mt-1'}`}
                   >
                     {showHeader && (
