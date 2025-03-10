@@ -13,6 +13,7 @@ interface AIChatProps {
   message?: string;
   onMessageProcessed?: () => void;
   teamId: string; // Add teamId prop
+  contextWindowSize?: number; // Maximum number of messages to include in context
 }
 
 interface Message {
@@ -59,6 +60,7 @@ const AIChat: React.FC<AIChatProps> = ({
   message = '',
   onMessageProcessed,
   teamId,
+  contextWindowSize = 10, // Default to 10 messages of context
 }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -70,6 +72,7 @@ const AIChat: React.FC<AIChatProps> = ({
   const modelSelectorRef = useRef<HTMLDivElement>(null);
   const [showChipsInfo, setShowChipsInfo] = useState(false);
   const realtimeSubscriptionRef = useRef<any>(null);
+  const [conversationSummary, setConversationSummary] = useState<string>('');
 
   // Theme-based styles
   const themeStyles = {
@@ -391,6 +394,86 @@ const AIChat: React.FC<AIChatProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Create optimized message context to reduce token usage
+  const createOptimizedContext = () => {
+    // We'll always include the system message
+    const systemMessage = {
+      role: 'system',
+      content: createSystemPrompt(selectedModel.id, projectName),
+    };
+    
+    // If we have a conversation summary and more messages than our window size
+    if (conversationSummary && messages.length > contextWindowSize) {
+      const contextMessages = [systemMessage];
+      
+      // Add the conversation summary as a system message
+      contextMessages.push({
+        role: 'system',
+        content: `Previous conversation summary: ${conversationSummary}`,
+      });
+      
+      // Add the most recent N messages based on contextWindowSize
+      const recentMessages = messages.slice(-contextWindowSize);
+      recentMessages.forEach(msg => {
+        contextMessages.push({
+          role: msg.sender === 'AI Assistant' ? 'assistant' : 'user',
+          content: msg.text,
+        });
+      });
+      
+      return contextMessages;
+    }
+    
+    // If we don't have many messages yet, just include all of them
+    return [
+      systemMessage,
+      ...messages.map((msg) => ({
+        role: msg.sender === 'AI Assistant' ? 'assistant' : 'user',
+        content: msg.text,
+      })),
+    ];
+  };
+  
+  // Generate a summary of the conversation when needed
+  const generateConversationSummary = async () => {
+    // Only summarize if we have enough messages
+    if (messages.length < contextWindowSize * 2) {
+      return;
+    }
+    
+    try {
+      // Get messages to summarize (all except the most recent contextWindowSize)
+      const messagesToSummarize = messages.slice(0, -contextWindowSize);
+      
+      // Format messages for summarization
+      const formattedMessages = messagesToSummarize.map(msg => 
+        `${msg.sender}: ${msg.text}`
+      ).join('\n');
+      
+      // Call to the AI API to generate summary
+      const response = await fetch('/api/ai/summarize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: selectedModel.model,
+          content: formattedMessages,
+        }),
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to generate conversation summary');
+        return;
+      }
+      
+      const data = await response.json();
+      setConversationSummary(data.summary);
+    } catch (error) {
+      console.error('Error generating conversation summary:', error);
+    }
+  };
+
   const sendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
     e?.preventDefault();
     if (!inputValue.trim()) return;
@@ -405,11 +488,24 @@ const AIChat: React.FC<AIChatProps> = ({
       avatar_url: user?.user_metadata?.avatar_url || '',
     };
 
+    // Add user message to the UI
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
     setIsTyping(true);
+    
+    // Check if we need to generate a summary
+    if (messages.length >= contextWindowSize * 2) {
+      // Generate summary in background, don't await
+      generateConversationSummary();
+    }
 
     try {
+      // Get optimized context for the AI
+      const optimizedMessages = createOptimizedContext();
+      
+      // Add current user message
+      optimizedMessages.push({ role: 'user', content: inputValue });
+      
       // Call to the Groq API via backend proxy
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
@@ -418,17 +514,7 @@ const AIChat: React.FC<AIChatProps> = ({
         },
         body: JSON.stringify({
           model: selectedModel.model,
-          messages: [
-            {
-              role: 'system',
-              content: createSystemPrompt(selectedModel.id, projectName),
-            },
-            ...messages.map((msg) => ({
-              role: msg.sender === 'AI Assistant' ? 'assistant' : 'user',
-              content: msg.text,
-            })),
-            { role: 'user', content: inputValue },
-          ],
+          messages: optimizedMessages,
         }),
       });
 
