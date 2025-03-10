@@ -5,7 +5,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+
 
 // TypeScript interfaces
 interface User {
@@ -140,21 +142,25 @@ const TeamPage: React.FC = () => {
     const chatContainer = teamChatRef.current;
     if (!chatContainer) return true;
 
-    // Consider user at bottom if within 100px of the bottom
+    // Use a smaller threshold (20px) to more accurately determine if user is at bottom
     return (
       chatContainer.scrollHeight -
         chatContainer.scrollTop -
         chatContainer.clientHeight <
-      100
+      20
     );
   };
 
-  // Function to scroll to bottom
-  const scrollToBottom = (smooth = false) => {
-    if (teamChatRef.current) {
-      teamChatRef.current.scrollTo({
-        top: teamChatRef.current.scrollHeight,
-        behavior: smooth ? 'smooth' : 'auto',
+  // Modified scrollToBottom function with callback option
+  const scrollToBottom = (smooth = false, force = false) => {
+    const container = teamChatRef.current;
+    if (!container) return;
+    
+    // Always scroll if forced (initial load) or if user is near the bottom
+    if (force || container.scrollHeight - container.scrollTop - container.clientHeight <= 20) {
+      container.scrollTo({ 
+        top: container.scrollHeight, 
+        behavior: smooth ? 'smooth' : 'auto' 
       });
     }
   };
@@ -184,71 +190,68 @@ const TeamPage: React.FC = () => {
           avatar_url: msg.sender?.avatar_url || '',
         }));
         setTeamMessages(messages);
+        // Set initial load complete - scrolling handled by dedicated useEffect
+        setInitialLoadComplete(true);
 
-        // After initial messages are loaded, scroll to bottom
-        setTimeout(() => {
-          scrollToBottom();
-          setInitialLoadComplete(true);
-        }, 100);
-      }
+        // Set up real-time subscription
+        const newSubscription = supabase
+          .channel('team_messages_changes')
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'team_messages',
+              filter: `team_id=eq.${id}`,
+            },
+            async (payload) => {
+              // When a new message is added, fetch the sender details
+              const { data: senderData, error: senderError } = await supabase
+                .from('profiles')
+                .select('display_name, email, avatar_url')
+                .eq('id', payload.new.sender_id)
+                .single();
 
-      // Set up real-time subscription
-      const newSubscription = supabase
-        .channel('team_messages_changes')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'team_messages',
-            filter: `team_id=eq.${id}`,
-          },
-          async (payload) => {
-            // When a new message is added, fetch the sender details
-            const { data: senderData, error: senderError } = await supabase
-              .from('profiles')
-              .select('display_name, email, avatar_url')
-              .eq('id', payload.new.sender_id)
-              .single();
+              if (senderError) {
+                console.error('Error fetching sender details:', senderError);
+              }
 
-            if (senderError) {
-              console.error('Error fetching sender details:', senderError);
+              const newMessage = {
+                id: payload.new.id,
+                text: payload.new.message,
+                sender:
+                  senderData?.display_name || senderData?.email || 'Unknown',
+                sender_id: payload.new.sender_id,
+                timestamp: new Date(payload.new.created_at),
+                avatar_url: senderData?.avatar_url || '',
+              };
+
+              // Check if user is at bottom before adding new message
+              const wasAtBottom = checkIfUserAtBottom();
+
+              setTeamMessages((prev) => [...prev, newMessage]);
+
+              // Only scroll if user was already at bottom when message arrived
+              if (wasAtBottom) {
+                // Remove setTimeout to make scrolling more predictable
+                scrollToBottom(false);
+              } else {
+                // Show scroll-down button if not at bottom
+                setShowScrollDown(true);
+              }
             }
+          )
+          .subscribe();
 
-            const newMessage = {
-              id: payload.new.id,
-              text: payload.new.message,
-              sender:
-                senderData?.display_name || senderData?.email || 'Unknown',
-              sender_id: payload.new.sender_id,
-              timestamp: new Date(payload.new.created_at),
-              avatar_url: senderData?.avatar_url || '',
-            };
+        setSubscription(newSubscription);
 
-            // Check if user is at bottom before adding new message
-            const wasAtBottom = checkIfUserAtBottom();
-
-            setTeamMessages((prev) => [...prev, newMessage]);
-
-            // Only scroll if user was already at bottom when message arrived
-            if (wasAtBottom) {
-              setTimeout(() => scrollToBottom(), 100);
-            } else {
-              // Show scroll-down button if not at bottom
-              setShowScrollDown(true);
-            }
+        // Cleanup function
+        return () => {
+          if (subscription) {
+            supabase.removeChannel(subscription);
           }
-        )
-        .subscribe();
-
-      setSubscription(newSubscription);
-
-      // Cleanup function
-      return () => {
-        if (subscription) {
-          supabase.removeChannel(subscription);
-        }
-      };
+        };
+      }
     };
 
     fetchTeamMessages();
@@ -271,7 +274,7 @@ const TeamPage: React.FC = () => {
 
   // Handle scroll to bottom button click
   const handleScrollToBottom = () => {
-    scrollToBottom(true); // Use smooth scrolling for button click
+    scrollToBottom(true, true); // Use smooth scrolling and force scroll to bottom
     setShowScrollDown(false);
     setIsNearBottom(true);
   };
@@ -343,6 +346,18 @@ const TeamPage: React.FC = () => {
   const formatTime = (date: Date): string => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
+
+  // Add a dedicated useEffect to handle scrolling to the bottom when messages load
+  useEffect(() => {
+    if (teamMessages.length > 0 && _initialLoadComplete) {
+      // Use a small timeout to ensure messages are rendered before scrolling
+      const timer = setTimeout(() => {
+        scrollToBottom(false, true); // Force scroll to bottom
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [teamMessages, _initialLoadComplete]);
 
   if (loading)
     return (
@@ -547,7 +562,7 @@ const TeamPage: React.FC = () => {
 
                 return (
                   <div
-                    key={msg.id}
+                    key={`${msg.id}-${index}`}
                     className={`flex ${showHeader ? 'mt-4' : 'mt-1'}`}
                   >
                     {showHeader && (
@@ -694,7 +709,8 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
   const [emailExists, setEmailExists] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Basic email validation
+  // Use useMemo to prevent recreating the regex on every render
+
   const emailRegex = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/, []);
 
   // Debounced check for existing email in "profiles"

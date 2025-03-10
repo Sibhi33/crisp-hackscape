@@ -1,61 +1,63 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
 import { Navbar } from '@/components/Navbar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  SearchIcon, 
-  Copy, 
-  CheckIcon, 
-  Code, 
-  Database, 
-  Server, 
-  Globe, 
-  Zap,
-  FileCode2,
-  Laptop,
-  BookOpen,
-  Layout,
-  Boxes,
-  Cloud,
-  Workflow,
-  Palette,
-  Grid,
-  Video,
-  BookMarked,
-  Flower2,
-  Layers,
-  CloudLightning,
-  Flame,
-  Package,
-  Leaf,
-  TerminalSquare,
-  Sparkles,
-} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+
 } from "@/components/ui/tooltip";
+import {
+    BookMarked,
+    BookOpen,
+    Boxes,
+    CheckIcon,
+    Cloud,
+    CloudLightning,
+    Code,
+    Copy,
+    Database,
+    FileCode2,
+    Flame,
+    Flower2,
+    Globe,
+    Grid,
+    Laptop,
+    Layers,
+    Layout,
+    Leaf,
+    Package,
+    Palette,
+    SearchIcon,
+    Server,
+    Sparkles,
+    TerminalSquare,
+    Video,
+    Workflow,
+    Zap,
+} from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 // Add animation CSS
 const animationStyles = `

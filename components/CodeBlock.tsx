@@ -11,8 +11,9 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, value }) => {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
-    setCopied(true);
     navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -30,6 +31,10 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ language, value }) => {
           margin: 0,
           borderTopLeftRadius: 0,
           borderTopRightRadius: 0,
+          maxWidth: '100%',
+          overflow: 'hidden',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word'
         }}
       >
         {value}
