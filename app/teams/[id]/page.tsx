@@ -347,17 +347,19 @@ const TeamPage: React.FC = () => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Add a dedicated useEffect to handle scrolling to the bottom when messages load
+  // Add a dedicated useEffect to handle scrolling to the bottom when messages first load
   useEffect(() => {
+    // Only scroll on the initial load (when _initialLoadComplete changes from false to true)
     if (teamMessages.length > 0 && _initialLoadComplete) {
       // Use a small timeout to ensure messages are rendered before scrolling
       const timer = setTimeout(() => {
+        // Only scroll to bottom on initial load
         scrollToBottom(false, true); // Force scroll to bottom
       }, 100);
       
       return () => clearTimeout(timer);
     }
-  }, [teamMessages, _initialLoadComplete]);
+  }, [_initialLoadComplete]); // Only depend on _initialLoadComplete, not teamMessages
 
   if (loading)
     return (
