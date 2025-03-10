@@ -140,8 +140,12 @@ const IdeaDetailsPage = () => {
   };
 
   // Function to check which group a key belongs to
-  const getGroupForKey = (key) => {
-    for (const [group, keys] of Object.entries(groupedResponse)) {
+  interface GroupedResponse {
+    [key: string]: string[];
+  }
+
+  const getGroupForKey = (key: string): string => {
+    for (const [group, keys] of Object.entries(groupedResponse as GroupedResponse)) {
       if (keys.some(k => key.toLowerCase().includes(k.toLowerCase()))) {
         return group;
       }
@@ -150,7 +154,7 @@ const IdeaDetailsPage = () => {
   };
 
   // Organize response into groups
-  const organizedResponse = {};
+  const organizedResponse: { [key: string]: { [key: string]: any } } = {};
   Object.entries(apiResponseParsed).forEach(([key, value]) => {
     const group = getGroupForKey(key);
     if (!organizedResponse[group]) {
@@ -159,7 +163,7 @@ const IdeaDetailsPage = () => {
     organizedResponse[group][key] = value;
   });
 
-  const formatTitle = (title) => {
+  const formatTitle = (title: string): string => {
     return title
       .replace(/([A-Z])/g, ' $1')
       .trim()
