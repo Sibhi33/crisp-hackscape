@@ -9,7 +9,6 @@ import {
   BrainCircuit, 
   Heart, 
   Leaf, 
-  Rocket, 
   Lightbulb, 
   Bot,
   Terminal,
@@ -23,6 +22,7 @@ import {
   BookOpen,
   Building
 } from 'lucide-react';
+import Image from 'next/image';
 
 const Projects = () => {
   const projectCategories = [
@@ -430,7 +430,7 @@ const Projects = () => {
         </h2>
 
         {projectCategories.map((category, categoryIndex) => {
-          const projects = allDomainProjects[category.name];
+          const projects = allDomainProjects[category.name as keyof typeof allDomainProjects];
           
           if (!projects || projects.length === 0) return null;
           
@@ -452,10 +452,12 @@ const Projects = () => {
                     >
                       <div className="flex flex-col items-center justify-center w-[280px] h-[200px] bg-gray-900/80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-gray-800 group transition-all duration-200">
                         <div className="relative w-full h-3/5 overflow-hidden">
-                          <img
+                          <Image
                             src={project.image}
                             alt={project.title}
                             className="w-full h-full object-contain p-4"
+                            width={280}
+                            height={120}
                           />
                         </div>
                         <div className="p-4 text-center">

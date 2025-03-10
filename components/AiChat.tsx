@@ -1,7 +1,7 @@
 'use client';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import CodeBlock from './CodeBlock';
 
@@ -102,13 +102,95 @@ const AIChat: React.FC<AIChatProps> = ({
     }
   }, [projectName, messages.length, selectedModel.id]);
 
+  // Handle message sent from the team chat via /chips command
+  const handleExternalMessage = useCallback(async (text: string) => {
+    if (!text.trim()) return;
+
+    const userMessage: Message = {
+      id: Date.now(),
+      text: text,
+      sender: user?.user_metadata?.display_name || 'You',
+      sender_id: user?.id,
+      sender_name: user?.user_metadata?.display_name || 'You',
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setIsTyping(true);
+
+    try {
+      // Call to the Groq API via backend proxy
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: selectedModel.model,
+          messages: [
+            {
+              role: 'system',
+              content: createSystemPrompt(selectedModel.id, projectName),
+            },
+            ...messages.map((msg) => ({
+              role: msg.sender === 'AI Assistant' ? 'assistant' : 'user',
+              content: msg.text,
+            })),
+            { role: 'user', content: text },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI response');
+      }
+
+      const data = await response.json();
+      const aiResponse = formatAIResponse(data.response, selectedModel.id);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          text: aiResponse,
+          sender: 'AI Assistant',
+          timestamp: new Date(),
+          model: selectedModel.id,
+        },
+      ]);
+
+      // Notify parent that message has been processed
+      if (onMessageProcessed) {
+        onMessageProcessed();
+      }
+    } catch (error) {
+      console.error('AI Chat Error:', error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          text: 'Sorry, I encountered an error. Please try again later.',
+          sender: 'AI Assistant',
+          timestamp: new Date(),
+          model: selectedModel.id,
+        },
+      ]);
+
+      if (onMessageProcessed) {
+        onMessageProcessed();
+      }
+    } finally {
+      setIsTyping(false);
+    }
+  }, [user, formatAIResponse, messages, onMessageProcessed, projectName, selectedModel.id, selectedModel.model]);
+
   // Process incoming message from parent component (from team chat)
   useEffect(() => {
     if (message && message.trim() !== '') {
       handleExternalMessage(message);
     }
-  }, [message]);
-  const setupRealtimeSubscription = async () => {
+  }, [message, handleExternalMessage]);
+
+  const setupRealtimeSubscription = useCallback(async () => {
     if (!teamId) return;
 
     // Remove existing subscription if it exists
@@ -202,7 +284,8 @@ const AIChat: React.FC<AIChatProps> = ({
       .subscribe();
 
     realtimeSubscriptionRef.current = channel;
-  };
+  }, [teamId, user]);
+
   // Fetch previous messages
   useEffect(() => {
     const fetchMessages = async () => {
@@ -276,90 +359,6 @@ const AIChat: React.FC<AIChatProps> = ({
       }
     };
   }, [teamId, setupRealtimeSubscription]);
-
-  // Setup realtime subscription
-  
-
-  // Handle message sent from the team chat via /chips command
-  const handleExternalMessage = async (text: string) => {
-    if (!text.trim()) return;
-
-    const userMessage: Message = {
-      id: Date.now(),
-      text: text,
-      sender: user?.user_metadata?.display_name || 'You',
-      sender_id: user?.id,
-      sender_name: user?.user_metadata?.display_name || 'You',
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setIsTyping(true);
-
-    try {
-      // Call to the Groq API via backend proxy
-      const response = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: selectedModel.model,
-          messages: [
-            {
-              role: 'system',
-              content: createSystemPrompt(selectedModel.id, projectName),
-            },
-            ...messages.map((msg) => ({
-              role: msg.sender === 'AI Assistant' ? 'assistant' : 'user',
-              content: msg.text,
-            })),
-            { role: 'user', content: text },
-          ],
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to get AI response');
-      }
-
-      const data = await response.json();
-      const aiResponse = formatAIResponse(data.response, selectedModel.id);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          text: aiResponse,
-          sender: 'AI Assistant',
-          timestamp: new Date(),
-          model: selectedModel.id,
-        },
-      ]);
-
-      // Notify parent that message has been processed
-      if (onMessageProcessed) {
-        onMessageProcessed();
-      }
-    } catch (error) {
-      console.error('AI Chat Error:', error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          text: 'Sorry, I encountered an error. Please try again later.',
-          sender: 'AI Assistant',
-          timestamp: new Date(),
-          model: selectedModel.id,
-        },
-      ]);
-
-      if (onMessageProcessed) {
-        onMessageProcessed();
-      }
-    } finally {
-      setIsTyping(false);
-    }
-  };
 
   // Scroll to bottom when messages update
   useEffect(() => {

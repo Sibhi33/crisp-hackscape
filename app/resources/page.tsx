@@ -35,14 +35,6 @@ import {
   Layout,
   Boxes,
   Cloud,
-  Lock,
-  Smartphone,
-  Terminal,
-  Cpu,
-  LineChart,
-  MessageSquare,
-  Share2,
-  ShieldCheck,
   Workflow,
   Palette,
   Grid,
@@ -56,7 +48,6 @@ import {
   Leaf,
   TerminalSquare,
   Sparkles,
-  ArrowRight
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -767,7 +758,7 @@ const SectionHeader = ({ title, subtitle }: { title: string; subtitle: string })
 );
 
 const ResourcesPage = () => {
-  const [activeTab, setActiveTab] = useState('ui');
+  const [_activeTab, setActiveTab] = useState('ui');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
   const [selectedProjectType, setSelectedProjectType] = useState<string>('');
@@ -1219,7 +1210,7 @@ const ResourcesPage = () => {
                       <Flame className="h-5 w-5 text-blue-600" />
                       <h3 className="font-semibold text-slate-900">Firebase</h3>
                     </div>
-                    <p className="text-sm text-slate-700">Google's platform for app development with ready-made backend services</p>
+                    <p className="text-sm text-slate-700">Google&apos;s platform for app development with ready-made backend services</p>
                   </a>
                   <a href="https://planetscale.com" target="_blank" rel="noopener noreferrer"
                      className="block p-4 rounded-lg border border-slate-200 hover-lift glow-on-hover gradient-border transition-all">
