@@ -1,19 +1,19 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import FormattedAnalysisCard from '@/components/FormatttedCard';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ChevronLeft, Share2, Trash2, Copy, X, ExternalLink } from 'lucide-react';
-import FormattedAnalysisCard from '@/components/FormatttedCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { supabase } from '@/lib/supabase';
+import { ChevronLeft, Copy, Share2, Trash2, X } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 // Define TypeScript interface for the project data
 interface Project {
@@ -140,12 +140,8 @@ const IdeaDetailsPage = () => {
   };
 
   // Function to check which group a key belongs to
-  interface GroupedResponse {
-    [key: string]: string[];
-  }
-
   const getGroupForKey = (key: string): string => {
-    for (const [group, keys] of Object.entries(groupedResponse as GroupedResponse)) {
+    for (const [group, keys] of Object.entries(groupedResponse)) {
       if (keys.some(k => key.toLowerCase().includes(k.toLowerCase()))) {
         return group;
       }
@@ -154,8 +150,8 @@ const IdeaDetailsPage = () => {
   };
 
   // Organize response into groups
-  const organizedResponse: { [key: string]: { [key: string]: any } } = {};
-  Object.entries(apiResponseParsed).forEach(([key, value]) => {
+  const organizedResponse: { [key: string]: { [key: string]: string } } = {};
+  Object.entries(apiResponseParsed).forEach(([key, value]: [string, any]) => {
     const group = getGroupForKey(key);
     if (!organizedResponse[group]) {
       organizedResponse[group] = {};
@@ -171,6 +167,8 @@ const IdeaDetailsPage = () => {
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
+  
+  
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
