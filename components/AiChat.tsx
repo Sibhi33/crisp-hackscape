@@ -394,46 +394,6 @@ const AIChat: React.FC<AIChatProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Create optimized message context to reduce token usage
-  const createOptimizedContext = () => {
-    // We'll always include the system message
-    const systemMessage = {
-      role: 'system',
-      content: createSystemPrompt(selectedModel.id, projectName),
-    };
-    
-    // If we have a conversation summary and more messages than our window size
-    if (conversationSummary && messages.length > contextWindowSize) {
-      const contextMessages = [systemMessage];
-      
-      // Add the conversation summary as a system message
-      contextMessages.push({
-        role: 'system',
-        content: `Previous conversation summary: ${conversationSummary}`,
-      });
-      
-      // Add the most recent N messages based on contextWindowSize
-      const recentMessages = messages.slice(-contextWindowSize);
-      recentMessages.forEach(msg => {
-        contextMessages.push({
-          role: msg.sender === 'AI Assistant' ? 'assistant' : 'user',
-          content: msg.text,
-        });
-      });
-      
-      return contextMessages;
-    }
-    
-    // If we don't have many messages yet, just include all of them
-    return [
-      systemMessage,
-      ...messages.map((msg) => ({
-        role: msg.sender === 'AI Assistant' ? 'assistant' : 'user',
-        content: msg.text,
-      })),
-    ];
-  };
-  
   // Generate a summary of the conversation when needed
   const generateConversationSummary = async () => {
     // Only summarize if we have enough messages
@@ -459,11 +419,13 @@ const AIChat: React.FC<AIChatProps> = ({
         body: JSON.stringify({
           model: selectedModel.model,
           content: formattedMessages,
+          teamId: teamId, // Pass the teamId to ensure team-specific processing
         }),
       });
       
       if (!response.ok) {
         console.error('Failed to generate conversation summary');
+        // Don't return - we'll continue without a summary
         return;
       }
       
@@ -471,9 +433,66 @@ const AIChat: React.FC<AIChatProps> = ({
       setConversationSummary(data.summary);
     } catch (error) {
       console.error('Error generating conversation summary:', error);
+      // Continue without the summary - this is a graceful fallback
     }
   };
 
+  // Create optimized message context to reduce token usage
+  const createOptimizedContext = () => {
+    // We'll always include the system message
+    const systemMessage = {
+      role: 'system',
+      content: createSystemPrompt(selectedModel.id, projectName),
+    };
+    
+    // Add team context to ensure the AI knows which team this is for
+    const teamContextMessage = {
+      role: 'system',
+      content: `You are assisting with team ID: ${teamId}. All context and responses should be relevant to this team only.`
+    };
+    
+    // If there's an error with summarization or no summary available yet, just use recent messages
+    try {
+      // If we have a conversation summary and more messages than our window size
+      if (conversationSummary && messages.length > contextWindowSize) {
+        const contextMessages = [systemMessage, teamContextMessage];
+        
+        // Add the conversation summary as a system message
+        contextMessages.push({
+          role: 'system',
+          content: `Previous conversation summary: ${conversationSummary}`,
+        });
+        
+        // Add the most recent N messages based on contextWindowSize
+        const recentMessages = messages.slice(-contextWindowSize);
+        recentMessages.forEach(msg => {
+          contextMessages.push({
+            role: msg.sender === 'AI Assistant' ? 'assistant' : 'user',
+            content: msg.text,
+          });
+        });
+        
+        return contextMessages;
+      }
+    } catch (error) {
+      console.error('Error creating optimized context:', error);
+      // On error, fallback to the basic context
+    }
+    
+    // Fallback - if there's no summary or an error, just include the system message and recent messages
+    // Control the number of messages to avoid token limits
+    const fallbackRecentMessages = messages.slice(-Math.min(contextWindowSize, messages.length));
+    
+    return [
+      systemMessage,
+      teamContextMessage,
+      ...fallbackRecentMessages.map((msg) => ({
+        role: msg.sender === 'AI Assistant' ? 'assistant' : 'user',
+        content: msg.text,
+      })),
+    ];
+  };
+  
   const sendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
     e?.preventDefault();
     if (!inputValue.trim()) return;
@@ -494,14 +513,31 @@ const AIChat: React.FC<AIChatProps> = ({
     setIsTyping(true);
     
     // Check if we need to generate a summary
+    // We do this in the background and don't block the main flow
     if (messages.length >= contextWindowSize * 2) {
       // Generate summary in background, don't await
       generateConversationSummary();
     }
 
     try {
-      // Get optimized context for the AI
-      const optimizedMessages = createOptimizedContext();
+      // Get optimized context for the AI - this will handle errors internally
+      let optimizedMessages = [];
+      try {
+        optimizedMessages = createOptimizedContext();
+      } catch (error) {
+        console.error('Failed to create optimized context, using fallback:', error);
+        // Fallback to minimal context if optimization fails
+        optimizedMessages = [
+          {
+            role: 'system',
+            content: createSystemPrompt(selectedModel.id, projectName),
+          },
+          { 
+            role: 'system',
+            content: `You are assisting with team ID: ${teamId}.`
+          }
+        ];
+      }
       
       // Add current user message
       optimizedMessages.push({ role: 'user', content: inputValue });

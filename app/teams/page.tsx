@@ -158,7 +158,7 @@ const TeamsPage: React.FC = () => {
                 >
                   All Teams
                 </button>
-                <button 
+            <button
                   onClick={() => setFilter('my')}
                   className={`px-4 py-2 rounded-lg border ${filter === 'my' ? 'bg-electric-blue text-white border-electric-blue' : 'border-white/20 bg-background/20 hover:bg-background/40'}`}
                 >
@@ -237,7 +237,7 @@ const TeamsPage: React.FC = () => {
                       
                       <button className="w-full px-4 py-2 border border-electric-blue/70 text-electric-blue hover:bg-electric-blue/10 rounded-lg text-sm transition-colors flex items-center justify-center">
                         View Team <ChevronRight className="ml-1 w-4 h-4" />
-                      </button>
+            </button>
                     </div>
                   </Card>
                 </motion.div>
@@ -336,7 +336,7 @@ const TeamsPage: React.FC = () => {
           <div className="mt-12 pt-8 border-t border-white/10 text-center text-sm text-muted-foreground">
             <p>&copy; {new Date().getFullYear()} Crisp. All rights reserved.</p>
           </div>
-        </div>
+      </div>
       </footer>
     </div>
   );
