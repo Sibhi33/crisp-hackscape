@@ -8,42 +8,46 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/Navbar';
 import TeamCreationModal from '@/components/TeamCreation';
+import { PlusIcon, ShareIcon, TrashIcon, UsersIcon } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 const IdeasPage = () => {
   const { user } = useAuth();
-  const [projects, setProjects] = useState<any[]>([]);
-  const [teams, setTeams] = useState<any[]>([]);
+  const [projects, setProjects] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Existing modal states
-  const [selectedProject, setSelectedProject] = useState<any>(null);
+  // Modal states
+  const [selectedProject, setSelectedProject] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [teamModalProject, setTeamModalProject] = useState(null);
   const [copied, setCopied] = useState(false);
-
-  // New modal state for team creation
-  const [teamModalProject, setTeamModalProject] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetchProjects = async () => {
+      setIsLoading(true);
       if (user) {
         const { data, error } = await supabase
           .from('projects')
           .select('*')
           .eq('user', user.id)
           .order('createdat', { ascending: false });
+        
         if (error) {
           console.error('Error fetching projects:', error);
         } else {
           setProjects(data || []);
         }
       }
+      setIsLoading(false);
     };
 
     fetchProjects();
   }, [user]);
 
-  // Fetch teams for the projects so we know which ones already have a team
   useEffect(() => {
     const fetchTeams = async () => {
       if (projects.length > 0) {
@@ -52,6 +56,7 @@ const IdeasPage = () => {
           .from('teams')
           .select('*')
           .in('project_id', projectIds);
+        
         if (error) {
           console.error('Error fetching teams:', error);
         } else {
@@ -63,18 +68,16 @@ const IdeasPage = () => {
     fetchTeams();
   }, [projects]);
 
-  const handleCardClick = (id: number) => {
+  const handleCardClick = (id) => {
     router.push(`/ideas/${id}`);
   };
 
-  // Open share modal
-  const handleShare = (project: any, e: React.MouseEvent) => {
+  const handleShare = (project, e) => {
     e.stopPropagation();
     setSelectedProject(project);
     setShowShareModal(true);
   };
 
-  // Copy share link to clipboard
   const handleCopy = async () => {
     const shareLink = `${window.location.origin}/ideas/${selectedProject.id}`;
     try {
@@ -86,128 +89,211 @@ const IdeasPage = () => {
     }
   };
 
-  // Open delete confirmation modal
-  const handleDeleteClick = (project: any, e: React.MouseEvent) => {
+  const handleDeleteClick = (project, e) => {
     e.stopPropagation();
     setSelectedProject(project);
     setShowDeleteModal(true);
   };
 
-  // Delete project from Supabase and update state
   const handleDelete = async () => {
-    const { error } = await supabase
-      .from('projects')
-      .delete()
-      .eq('id', selectedProject.id);
-    if (error) {
-      console.error('Error deleting project:', error);
-    } else {
-      setProjects((prev) =>
-        prev.filter((proj) => proj.id !== selectedProject.id)
-      );
-      setShowDeleteModal(false);
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', selectedProject.id);
+      
+      if (error) {
+        console.error('Error deleting project:', error);
+      } else {
+        setProjects((prev) => prev.filter((proj) => proj.id !== selectedProject.id));
+        setShowDeleteModal(false);
+      }
+    } catch (error) {
+      console.error('Error in delete operation:', error);
     }
   };
 
-  // Open team creation modal
-  const handleOpenTeamModal = (project: any, e: React.MouseEvent) => {
+  const handleOpenTeamModal = (project, e) => {
     e.stopPropagation();
     setTeamModalProject(project);
   };
 
-  // Navigate to the team's page using the team id from the profiles table
-  const handleGoToTeam = (team: any) => {
+  const handleGoToTeam = (team, e) => {
+    e.stopPropagation();
     router.push(`/teams/${team.id}`);
   };
 
-  // When a team is created, update local state so the "Create Team" button is no longer shown
-  const handleTeamCreated = (newTeam: any) => {
+  const handleTeamCreated = (newTeam) => {
     setTeams((prev) => [...prev, newTeam]);
+    setTeamModalProject(null);
   };
+
+  // Filter projects based on search query
+  const filteredProjects = searchQuery 
+    ? projects.filter(project => 
+        project.PS.toLowerCase().includes(searchQuery.toLowerCase()))
+    : projects;
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <p className="text-xl font-semibold text-gray-700">
-          Please log in to view your projects.
-        </p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md p-8 rounded-lg shadow-md bg-white">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Sign in Required</h2>
+          <p className="mb-6 text-gray-600">
+            Please log in to view and manage your projects.
+          </p>
+          <Button onClick={() => router.push('/login')}>
+            Sign In
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
       <Navbar />
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-4xl font-bold text-gray-800">My Projects</h1>
-          <Button onClick={() => router.push('/new-project')}>
-            + New Project
-          </Button>
+      
+      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        {/* Header with search and actions */}
+        <div className="mb-8 space-y-4 md:space-y-0 md:flex md:items-center md:justify-between">
+          <h1 className="text-3xl font-bold text-gray-800">My Projects</h1>
+          
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="relative w-full sm:w-64">
+              <Input
+                type="text"
+                placeholder="Search projects..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 w-full"
+              />
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </div>
+            </div>
+            
+            <Button 
+              onClick={() => router.push('/assistant')}
+              className="w-full sm:w-auto flex items-center gap-2"
+            >
+              <PlusIcon size={16} />
+              New Project
+            </Button>
+          </div>
         </div>
-        {projects.length === 0 ? (
-          <p className="text-lg text-gray-600">
-            No projects found. Start by creating a new project.
-          </p>
+        
+        {/* Projects grid */}
+        {isLoading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        ) : filteredProjects.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-md p-8 text-center">
+            {searchQuery ? (
+              <>
+                <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">No matching projects</h2>
+                <p className="text-gray-600 mb-4">
+                  We couldn't find any projects matching "{searchQuery}"
+                </p>
+                <Button variant="outline" onClick={() => setSearchQuery('')}>
+                  Clear Search
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                  <PlusIcon className="h-8 w-8 text-blue-500" />
+                </div>
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">No projects yet</h2>
+                <p className="text-gray-600 mb-4">
+                  Get started by creating your first project
+                </p>
+                <Button onClick={() => router.push('/new-project')}>
+                  Create Project
+                </Button>
+              </>
+            )}
+          </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {projects.map((project) => {
-              // Check if a team already exists for this project
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProjects.map((project) => {
               const teamForProject = teams.find(
                 (team) => team.project_id === project.id
               );
+              
               return (
                 <Card
                   key={project.id}
-                  className="cursor-pointer transform hover:scale-105 transition duration-300 shadow-lg hover:shadow-2xl"
+                  className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer bg-white"
                   onClick={() => handleCardClick(project.id)}
                 >
-                  <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-4 rounded-t">
-                    <CardTitle className="text-xl font-semibold">
+                  <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4">
+                    <CardTitle className="text-xl font-semibold line-clamp-2">
                       {project.PS}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-4 bg-white">
-                    <p className="text-sm text-gray-600">
-                      {new Date(project.createdat).toLocaleString()}
-                    </p>
-                    <div className="mt-4 flex justify-between">
+                  
+                  <CardContent className="p-5 flex flex-col space-y-4">
+                    <div className="text-sm text-gray-500 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                      </svg>
+                      {new Date(project.createdat).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                    
+                    <div className="flex justify-between gap-2">
                       <Button
-                        variant="secondary"
+                        variant="outline"
                         size="sm"
+                        className="flex-1 flex items-center justify-center gap-1"
                         onClick={(e) => handleShare(project, e)}
                       >
-                        Share
+                        <ShareIcon size={14} /> Share
                       </Button>
+                      
                       <Button
-                        variant="destructive"
+                        variant="outline"
                         size="sm"
+                        className="flex-1 flex items-center justify-center gap-1 text-red-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
                         onClick={(e) => handleDeleteClick(project, e)}
                       >
-                        Delete
+                        <TrashIcon size={14} /> Delete
                       </Button>
                     </div>
+                    
                     {teamForProject ? (
-                      <div className="mt-4">
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleGoToTeam(teamForProject);
-                          }}
-                          className="w-full"
-                        >
-                          Go to Team
-                        </Button>
-                      </div>
+                      <Button
+                        variant="default"
+                        className="w-full flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600"
+                        onClick={(e) => handleGoToTeam(teamForProject, e)}
+                      >
+                        <UsersIcon size={16} /> Go to Team
+                      </Button>
                     ) : (
-                      <div className="mt-4">
-                        <Button
-                          onClick={(e) => handleOpenTeamModal(project, e)}
-                          className="w-full"
-                        >
-                          Create Team
-                        </Button>
-                      </div>
+                      <Button
+                        variant="outline"
+                        className="w-full flex items-center justify-center gap-2 border-dashed"
+                        onClick={(e) => handleOpenTeamModal(project, e)}
+                      >
+                        <UsersIcon size={16} /> Create Team
+                      </Button>
                     )}
                   </CardContent>
                 </Card>
@@ -215,31 +301,41 @@ const IdeasPage = () => {
             })}
           </div>
         )}
-      </div>
-
+      </main>
+      
       {/* Share Modal */}
       {showShareModal && selectedProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg p-6 w-80">
-            <h2 className="text-xl font-semibold mb-4 text-black">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">
               Share Project
             </h2>
-            <input
-              type="text"
-              readOnly
-              value={`${window.location.origin}/ideas/${selectedProject.id}`}
-              className="w-full p-2 border rounded mb-4 text-black"
-            />
-            <Button onClick={handleCopy} className="w-full mb-2">
-              {copied ? 'Copied!' : 'Copy Link'}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowShareModal(false)}
-              className="w-full"
-            >
-              Close
-            </Button>
+            <p className="text-sm text-gray-500 mb-4">
+              Share this link with others to give them access to your project
+            </p>
+            <div className="flex items-center space-x-2 mb-4">
+              <Input
+                type="text"
+                readOnly
+                value={`${window.location.origin}/ideas/${selectedProject.id}`}
+                className="bg-gray-50"
+              />
+              <Button 
+                onClick={handleCopy} 
+                variant="outline"
+                className={`shrink-0 ${copied ? 'bg-green-50 text-green-600 border-green-200' : ''}`}
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </Button>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setShowShareModal(false)}
+              >
+                Close
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -247,26 +343,24 @@ const IdeasPage = () => {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg p-6 w-80 ">
-            <h2 className="text-xl text-black font-semibold mb-4">
-              Confirm Delete
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h2 className="text-xl font-semibold mb-2 text-gray-800">
+              Delete Project
             </h2>
-            <p className="mb-4 text-black">
-              Are you sure you want to delete the project &quot;
-              {selectedProject.PS}&quot;?
+            <p className="mb-6 text-gray-600">
+              Are you sure you want to delete "{selectedProject.PS}"? This action cannot be undone.
             </p>
-            <div className="flex space-x-2">
+            <div className="flex justify-end space-x-3">
               <Button
                 variant="outline"
                 onClick={() => setShowDeleteModal(false)}
-                className="w-full"
               >
                 Cancel
               </Button>
               <Button
                 variant="destructive"
                 onClick={handleDelete}
-                className="w-full"
+                className="bg-red-500 hover:bg-red-600"
               >
                 Delete
               </Button>
@@ -282,6 +376,17 @@ const IdeasPage = () => {
           onClose={() => setTeamModalProject(null)}
           onTeamCreated={handleTeamCreated}
         />
+      )}
+      
+      {/* Toast notification for success messages */}
+      {copied && (
+        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-3 rounded-md shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-bottom-5 duration-300">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          Link copied to clipboard
+        </div>
       )}
     </div>
   );
