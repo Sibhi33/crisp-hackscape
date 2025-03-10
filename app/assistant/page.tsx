@@ -1,20 +1,20 @@
 "use client";
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { AlertCircle, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Navbar } from '@/components/Navbar';
-import FormattedAnalysisCard from '@/components/FormatttedCard';
 import { analyzeIdea, ApiResponse } from '@/app/api/analysisApi';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/contexts/AuthContext';
+import FormattedAnalysisCard from '@/components/FormatttedCard';
+import { Navbar } from '@/components/Navbar';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
 import { WavyBackground } from '@/components/ui/wavy-background';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { motion } from 'framer-motion';
+import { AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
 
 const GroqStepperPage = () => {
   const [step, setStep] = useState(0);
@@ -83,60 +83,60 @@ const GroqStepperPage = () => {
     switch (step) {
       case 0:
         return (
-          <div className="flex-grow flex flex-col">
-            <div className="flex items-center space-x-2 mb-1">
-              <h3 className="text-base font-medium">Problem Statement</h3>
-              <div className="text-[10px] bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded-full">Required</div>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <h3 className="text-lg font-medium">Problem Statement</h3>
+              <div className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded-full">Required</div>
             </div>
-            <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">Clearly define the problem your solution addresses.</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Clearly define the problem your solution addresses. What pain points are you solving?</p>
             <Textarea
               value={problemStatement}
               onChange={(e) => setProblemStatement(e.target.value)}
-              placeholder="E.g., Many small businesses struggle with inventory management..."
-              className="text-sm flex-grow"
+              placeholder="E.g., Many small businesses struggle with inventory management, leading to lost sales and inefficient operations..."
+              className="h-36 transition-shadow focus:shadow-md"
             />
-            <div className="text-[10px] text-right text-gray-500 mt-1">{problemStatement.length > 0 ? `${problemStatement.length} characters` : "No input yet"}</div>
+            <div className="text-xs text-right text-gray-500">{problemStatement.length > 0 ? `${problemStatement.length} characters` : "No input yet"}</div>
           </div>
         );
       case 1:
         return (
-          <div className="flex-grow flex flex-col">
-            <div className="flex items-center space-x-2 mb-1">
-              <h3 className="text-base font-medium">Solution Description</h3>
-              <div className="text-[10px] bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded-full">Required</div>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <h3 className="text-lg font-medium">Solution Description</h3>
+              <div className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded-full">Required</div>
             </div>
-            <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">Describe your solution in detail.</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Describe your solution in detail. How does it work? What makes it unique?</p>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="E.g., Our cloud-based inventory management system uses AI..."
-              className="text-sm flex-grow"
+              placeholder="E.g., Our cloud-based inventory management system uses AI to predict stock needs and integrates with point-of-sale systems..."
+              className="h-36 transition-shadow focus:shadow-md"
             />
-            <div className="text-[10px] text-right text-gray-500 mt-1">{description.length > 0 ? `${description.length} characters` : "No input yet"}</div>
+            <div className="text-xs text-right text-gray-500">{description.length > 0 ? `${description.length} characters` : "No input yet"}</div>
           </div>
         );
       case 2:
         return (
-          <div className="flex-grow flex flex-col">
-            <div className="flex items-center space-x-2 mb-1">
-              <h3 className="text-base font-medium">Tracks/Category</h3>
-              <div className="text-[10px] bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded-full">Required</div>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <h3 className="text-lg font-medium">Tracks/Category</h3>
+              <div className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded-full">Required</div>
             </div>
-            <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">Select the industry or category that best fits your idea.</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Select the industry or category that best fits your idea. This helps with targeted analysis.</p>
             <Input
               value={tracks}
               onChange={(e) => setTracks(e.target.value)}
-              placeholder="E.g., Retail Tech, Healthcare, Fintech..."
-              className="text-sm mb-2"
+              placeholder="E.g., Retail Tech, Healthcare, Fintech, Education, Sustainability..."
+              className="transition-shadow focus:shadow-md"
             />
-            <div className="grid grid-cols-3 gap-1 mt-auto">
+            <div className="grid grid-cols-3 gap-2 mt-4">
               {["Healthcare", "Education", "Fintech", "E-commerce", "Sustainability", "AI/ML"].map(category => (
                 <Button 
                   key={category}
                   type="button" 
                   variant="outline" 
                   size="sm"
-                  className={`text-[10px] h-7 ${tracks === category ? 'bg-indigo-100 dark:bg-indigo-900 border-indigo-500' : ''}`}
+                  className={`text-xs ${tracks === category ? 'bg-indigo-100 dark:bg-indigo-900 border-indigo-500' : ''}`}
                   onClick={() => setTracks(category)}
                 >
                   {category}
@@ -147,19 +147,25 @@ const GroqStepperPage = () => {
         );
       case 3:
         return (
-          <div className="flex-grow flex flex-col">
-            <div className="flex items-center space-x-2 mb-1">
-              <h3 className="text-base font-medium">Additional Details</h3>
-              <div className="text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-2 py-0.5 rounded-full">Optional</div>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <h3 className="text-lg font-medium">Additional Details</h3>
+              <div className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-2 py-0.5 rounded-full">Optional</div>
             </div>
-            <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">Share any other relevant information.</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Share any other relevant information about your idea, target market, or implementation plans.</p>
             <Textarea
               value={otherDetails}
               onChange={(e) => setOtherDetails(e.target.value)}
-              placeholder="E.g., Target market is small to medium retailers..."
-              className="text-sm flex-grow"
+              placeholder="E.g., Target market is small to medium retailers. We've conducted interviews with 20 potential customers who confirmed the need..."
+              className="h-36 transition-shadow focus:shadow-md"
             />
-            <div className="text-[10px] text-right text-gray-500 mt-1">{otherDetails.length > 0 ? `${otherDetails.length} characters` : "No input yet"}</div>
+            <div className="text-xs text-right text-gray-500">{otherDetails.length > 0 ? `${otherDetails.length} characters` : "No input yet"}</div>
+            <Alert className="bg-blue-50 dark:bg-blue-900 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                You&apos;re almost done! Review your inputs before submitting for analysis.
+              </AlertDescription>
+            </Alert>
           </div>
         );
       default:
@@ -169,60 +175,55 @@ const GroqStepperPage = () => {
 
   const renderAnalysisResults = () => (
     <motion.div 
-      className="flex-grow flex flex-col"
+      className="space-y-6"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Limited height for analysis results with no scrolling */}
-      <div className="flex-grow">
-        <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
-          {Object.entries(apiResult || {}).slice(0, 4).map(([key, value], index) => (
+      
+      
+      {/* Scrollable container for analysis results */}
+      <div className="max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+        <div className="grid gap-6">
+          {Object.entries(apiResult || {}).map(([key, value], index) => (
             <motion.div
               key={key}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
             >
-              <div className="border border-indigo-200 bg-white/10 rounded-lg p-3">
-                <h3 className="text-sm font-semibold mb-1">
-                  {key
+              <FormattedAnalysisCard
+                title={
+                  key
                     .replace(/([A-Z])/g, ' $1')
                     .trim()
                     .split(' ')
                     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join(' ')}
-                </h3>
-                <p className="text-xs text-slate-700">
-                  {typeof value === 'string' && value.length > 150 
-                    ? `${value.substring(0, 150)}...` 
-                    : value}
-                </p>
-              </div>
+                    .join(' ')
+                }
+                content={value}
+              />
             </motion.div>
           ))}
         </div>
       </div>
       
-      <div className="flex justify-center mt-3">
+      <div className="flex justify-center mt-8">
         <Button
           variant="outline"
           onClick={() => {
             setStep(0);
             setApiResult(null);
           }}
-          className="mr-3 text-xs h-8"
-          size="sm"
+          className="mr-4"
         >
-          New Analysis
+          Start New Analysis
         </Button>
         <Button
           onClick={() => {
             // Implement save or export functionality
             alert("Analysis saved successfully!");
           }}
-          className="text-xs h-8"
-          size="sm"
         >
           Save Analysis
         </Button>
@@ -233,36 +234,36 @@ const GroqStepperPage = () => {
   return (
     <> 
       <Navbar />
-      <div className="relative h-[calc(100vh-4rem)]">
+      <div className="relative overflow-y-hidden">
         <WavyBackground />
-        <div className="absolute inset-0 flex items-center justify-center z-10 px-4">
+        <div className="absolute inset-0 flex items-center justify-center z-10 px-4 overflow-hidden">
           <motion.div 
-            className="w-full max-w-4xl"
+            className="w-full max-w-4xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Card className="glassmorphism mx-auto h-[75vh] flex flex-col">
-              <CardHeader className="py-3">
-                <CardTitle className="text-xl md:text-2xl font-bold text-center">
+            <Card className="glassmorphism">
+              <CardHeader>
+                <CardTitle className="text-2xl md:text-3xl font-bold text-center">
                   {apiResult ? "Idea Analysis Results" : "Idea Analysis Form"}
                 </CardTitle>
-                <CardDescription className="text-center text-sm">
+                <CardDescription className="text-center text-lg">
                   {apiResult ? "Review the detailed feedback on your idea" : "Submit your idea for comprehensive analysis and feedback"}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex-grow flex flex-col overflow-hidden py-3">
+              <CardContent>
                 {!apiResult && (
-                  <div className="mb-4">
-                    <Progress value={progress} className="h-2 rounded-full" />
-                    <div className="flex justify-between mt-2">
+                  <div className="mb-8">
+                    <Progress value={progress} className="h-3 rounded-full" />
+                    <div className="flex justify-between mt-3">
                       {steps.map((s, i) => (
                         <div 
                           key={i} 
                           className={`text-center flex-1 ${i === step ? 'text-primary' : 'text-gray-500'}`}
                         >
-                          <div className="text-xs font-medium">{s.label}</div>
-                          <div className="text-[10px] hidden md:block">{s.subtitle}</div>
+                          <div className="text-sm font-medium">{s.label}</div>
+                          <div className="text-xs hidden md:block">{s.subtitle}</div>
                         </div>
                       ))}
                     </div>
@@ -270,10 +271,10 @@ const GroqStepperPage = () => {
                 )}
                 
                 {loading ? (
-                  <div className="text-center py-8 flex-grow flex flex-col justify-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
-                    <p className="text-base">Analyzing your idea...</p>
-                    <p className="text-xs text-gray-500 mt-1">This may take a moment</p>
+                  <div className="text-center py-16">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-6" />
+                    <p className="text-lg">Analyzing your idea...</p>
+                    <p className="text-sm text-gray-500 mt-2">This may take a moment</p>
                   </div>
                 ) : (
                   <motion.div
@@ -282,22 +283,20 @@ const GroqStepperPage = () => {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
                     transition={{ duration: 0.3 }}
-                    className="flex-grow flex flex-col"
                   >
                     {apiResult ? (
                       renderAnalysisResults()
                     ) : (
-                      <div className="flex-grow flex flex-col">
+                      <div className="p-1">
                         {renderStepContent()}
-                        <div className="mt-auto pt-2 flex justify-between">
+                        <div className="mt-8 flex justify-between">
                           {step > 0 ? (
                             <Button 
                               variant="outline" 
                               onClick={() => setStep(step - 1)}
-                              className="flex items-center text-sm h-8"
-                              size="sm"
+                              className="flex items-center"
                             >
-                              <ArrowLeft className="h-3 w-3 mr-1" />
+                              <ArrowLeft className="h-4 w-4 mr-2" />
                               Back
                             </Button>
                           ) : (
@@ -308,18 +307,16 @@ const GroqStepperPage = () => {
                             <Button 
                               onClick={() => setStep(step + 1)}
                               disabled={(step === 0 && !problemStatement) || (step === 1 && !description)} 
-                              className="flex items-center text-sm h-8"
-                              size="sm"
+                              className="flex items-center"
                             >
                               Continue
-                              <ArrowRight className="h-3 w-3 ml-1" />
+                              <ArrowRight className="h-4 w-4 ml-2" />
                             </Button>
                           ) : (
                             <Button
                               onClick={handleSubmit}
                               disabled={!problemStatement || !description || !tracks}
-                              className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-sm h-8"
-                              size="sm"
+                              className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
                             >
                               Analyze My Idea
                             </Button>
@@ -331,9 +328,9 @@ const GroqStepperPage = () => {
                 )}
                 
                 {error && (
-                  <Alert variant="destructive" className="mt-2">
-                    <AlertCircle className="h-3 w-3" />
-                    <AlertDescription className="text-xs">{error}</AlertDescription>
+                  <Alert variant="destructive" className="mt-6">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
               </CardContent>
@@ -356,7 +353,6 @@ const GroqStepperPage = () => {
       :global(.glassmorphism textarea) {
         background: rgba(255, 255, 255, 0.2);
         border-color: rgba(255, 255, 255, 0.3);
-        font-size: 0.875rem;
       }
       
       :global(.glassmorphism input:focus),
@@ -365,12 +361,23 @@ const GroqStepperPage = () => {
         border-color: rgba(255, 255, 255, 0.5);
       }
       
-      /* Fixed textarea height */
-      :global(.glassmorphism textarea) {
-        height: 8rem;
-        max-height: 8rem;
-        min-height: 8rem;
-        resize: none;
+      /* Custom scrollbar styling */
+      :global(.custom-scrollbar::-webkit-scrollbar) {
+        width: 6px;
+      }
+      
+      :global(.custom-scrollbar::-webkit-scrollbar-track) {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+      }
+      
+      :global(.custom-scrollbar::-webkit-scrollbar-thumb) {
+        background: rgba(129, 140, 248, 0.5);
+        border-radius: 10px;
+      }
+      
+      :global(.custom-scrollbar::-webkit-scrollbar-thumb:hover) {
+        background: rgba(129, 140, 248, 0.7);
       }
     `}</style>
     </>
