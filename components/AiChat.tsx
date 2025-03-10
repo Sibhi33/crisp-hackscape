@@ -123,7 +123,8 @@ const AIChat: React.FC<AIChatProps> = ({
           ai_message,
           created_at,
           sender_id,
-          profiles:sender_id (
+          model,
+          profiles (
             display_name,
             email,
             avatar_url
@@ -146,12 +147,16 @@ const AIChat: React.FC<AIChatProps> = ({
             formattedMessages.push({
               id: `${msg.id}-user`,
               text: msg.user_message,
-              sender: 'You',
+              sender: msg.sender_id === user?.id ? 'You' : 'Team member',
               sender_id: msg.sender_id,
               sender_name:
-                msg.profiles?.[0]?.display_name || msg.profiles?.[0]?.email || 'Unknown',
+                msg.profiles && typeof msg.profiles === 'object' && 'display_name' in msg.profiles 
+                  ? msg.profiles.display_name || msg.profiles.email || 'Unknown'
+                  : 'Unknown',
               timestamp: new Date(msg.created_at),
-              avatar_url: msg.profiles?.[0]?.avatar_url,
+              avatar_url: msg.profiles && typeof msg.profiles === 'object' && 'avatar_url' in msg.profiles
+                ? msg.profiles.avatar_url
+                : undefined,
             });
           }
           
@@ -162,7 +167,7 @@ const AIChat: React.FC<AIChatProps> = ({
               text: msg.ai_message,
               sender: 'AI Assistant',
               timestamp: new Date(msg.created_at),
-              model: 'research',
+              model: msg.model || 'research',
             });
           }
         });
@@ -246,14 +251,16 @@ const AIChat: React.FC<AIChatProps> = ({
                 sender:
                   data.sender_id === user?.id
                     ? 'You'
-                    : data.profiles?.[0]?.display_name || 'Team member',
+                    : 'Team member',
                 sender_id: data.sender_id,
                 sender_name:
-                  data.profiles?.[0]?.display_name ||
-                  data.profiles?.[0]?.email ||
-                  'Unknown',
+                  data.profiles && typeof data.profiles === 'object' && 'display_name' in data.profiles
+                    ? data.profiles.display_name || data.profiles.email || 'Unknown'
+                    : 'Unknown',
                 timestamp: new Date(data.created_at),
-                avatar_url: data.profiles?.[0]?.avatar_url,
+                avatar_url: data.profiles && typeof data.profiles === 'object' && 'avatar_url' in data.profiles
+                  ? data.profiles.avatar_url
+                  : undefined,
               });
             }
             
@@ -265,7 +272,7 @@ const AIChat: React.FC<AIChatProps> = ({
                 text: data.ai_message,
                 sender: 'AI Assistant',
                 timestamp: new Date(data.created_at),
-                model: 'research',
+                model: data.model || 'research',
               });
             }
 
@@ -438,6 +445,7 @@ const AIChat: React.FC<AIChatProps> = ({
         user_message: inputValue,
         ai_message: aiResponse,
         sender_id: user?.id,
+        model: selectedModel.id
       });
 
       if (dbError) {
@@ -805,15 +813,18 @@ const AIChat: React.FC<AIChatProps> = ({
               >
                 {msg.sender === 'AI Assistant' && (
                   <div className="flex items-center space-x-2 mb-2">
-                    <span className="text-xs">
+                    <div 
+                      className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                        darkMode ? 'bg-gray-600' : 'bg-gray-300'
+                      }`}
+                      title="AI Assistant"
+                    >
                       {msg.model === 'research' ? '📚' : '🧮'}
-                    </span>
+                    </div>
                     <span
                       className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
                     >
-                      Using{' '}
-                      {msg.model === 'research' ? 'Research' : 'Reasoning'}{' '}
-                      model
+                      Using {msg.model === 'research' ? 'Research' : 'Reasoning'} model
                     </span>
                   </div>
                 )}
@@ -837,7 +848,31 @@ const AIChat: React.FC<AIChatProps> = ({
                       : 'text-blue-200'
                   }`}
                 >
-                  <span>{msg.sender_name || msg.sender}</span>
+                  <div className="flex items-center">
+                    {msg.sender !== 'AI Assistant' ? (
+                      <div 
+                        className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs mr-1 relative group"
+                        data-tooltip={msg.sender_name || msg.sender}
+                      >
+                        {(msg.sender_name || msg.sender).charAt(0).toUpperCase()}
+                        <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-xs whitespace-nowrap rounded bg-gray-800 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                          {msg.sender_name || msg.sender}
+                        </span>
+                      </div>
+                    ) : (
+                      <div 
+                        className={`w-5 h-5 rounded-full flex items-center justify-center text-xs mr-1 ${
+                          darkMode ? 'bg-gray-600' : 'bg-gray-300'
+                        } relative group`}
+                        data-tooltip="AI Assistant"
+                      >
+                        {msg.model === 'research' ? '📚' : '🧮'}
+                        <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-xs whitespace-nowrap rounded bg-gray-800 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                          AI Assistant
+                        </span>
+                      </div>
+                    )}
+                  </div>
                   <span>{formatTime(new Date(msg.timestamp))}</span>
                 </div>
               </div>
@@ -851,7 +886,16 @@ const AIChat: React.FC<AIChatProps> = ({
               className={`max-w-3/4 ${themeStyles.messageBg} rounded-2xl px-4 py-2`}
             >
               <div className="flex items-center space-x-2 mb-1">
-                <span className="text-xs">{selectedModel.icon}</span>
+                <div 
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${
+                    darkMode ? 'bg-gray-600' : 'bg-gray-300'
+                  } relative group`}
+                >
+                  {selectedModel.icon}
+                  <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 text-xs whitespace-nowrap rounded bg-gray-800 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                    AI Assistant
+                  </span>
+                </div>
                 <span
                   className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
                 >
