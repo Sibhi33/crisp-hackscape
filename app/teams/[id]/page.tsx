@@ -5,7 +5,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
+
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+
 
 // TypeScript interfaces
 interface User {
@@ -708,6 +710,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
   const [loading, setLoading] = useState(false);
 
   // Use useMemo to prevent recreating the regex on every render
+
   const emailRegex = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/, []);
 
   // Debounced check for existing email in "profiles"
