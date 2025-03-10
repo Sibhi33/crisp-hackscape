@@ -1,15 +1,17 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
 import { Navbar } from '@/components/Navbar';
+import { ParticleBackground } from '@/components/ParticleBackground';
 import TeamCreationModal from '@/components/TeamCreation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { PlusIcon, ShareIcon, TrashIcon, UsersIcon } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Calendar, ChevronRight, PlusIcon, Search, ShareIcon, TrashIcon, UsersIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
 
 interface Project {
   id: number;
@@ -137,12 +139,13 @@ const IdeasPage: React.FC = () => {
     }
   };
 
-  const handleOpenTeamModal = (project: Project, e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleOpenTeamModal = (project: Project, e: React.MouseEvent<Element>) => {
     e.stopPropagation();
+    setSelectedProject(project);
     setTeamModalProject(project);
   };
 
-  const handleGoToTeam = (team: Team, e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleGoToTeam = (team: Team, e: React.MouseEvent<Element>) => {
     e.stopPropagation();
     router.push(`/teams/${team.id}`);
   };
@@ -175,53 +178,49 @@ const IdeasPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className="min-h-screen w-full flex flex-col bg-gradient-to-br from-blue-50 to-indigo-50 relative">
+      <ParticleBackground />
       <Navbar />
       
-      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        {/* Header with search and actions */}
-        <div className="mb-8 space-y-4 md:space-y-0 md:flex md:items-center md:justify-between">
-          <h1 className="text-3xl font-bold text-gray-800">My Projects</h1>
-          
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <div className="relative w-full sm:w-64">
-              <Input
-                type="text"
-                placeholder="Search projects..."
-                value={searchQuery}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setSearchQuery(e.target.value)
-                }
-                className="pl-10 w-full"
-              />
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-gray-400"
-                >
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
+      <main className="container mx-auto px-4 py-8 relative z-10">
+        <header className="mb-8 space-y-4">
+          <motion.h1
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.7 }}
+            className="text-4xl md:text-5xl font-black bg-gradient-to-r from-electric-blue via-cyber-purple to-cyber-pink bg-clip-text text-transparent drop-shadow-lg"
+          >
+            Your Projects
+          </motion.h1>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="glassmorphism rounded-xl p-5 border border-white/20 bg-background/40 backdrop-blur-xl"
+          >
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              <div className="relative flex-grow">
+                <Input
+                  type="text"
+                  placeholder="Search projects..."
+                  value={searchQuery}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                  className="pl-10 w-full bg-background/20 border border-white/10 rounded-lg py-2 focus:outline-none focus:ring-2 focus:ring-electric-blue/50"
+                />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search size={16} className="text-muted-foreground" />
+                </div>
               </div>
+              <Button
+                onClick={() => router.push('/assistant')}
+                className="w-full sm:w-auto flex items-center gap-2 cyber-button"
+              >
+                <PlusIcon size={16} />
+                New Project
+              </Button>
             </div>
-            
-            <Button
-              onClick={() => router.push('/assistant')}
-              className="w-full sm:w-auto flex items-center gap-2"
-            >
-              <PlusIcon size={16} />
-              New Project
-            </Button>
-          </div>
-        </div>
+          </motion.div>
+        </header>
         
         {/* Projects grid */}
         {isLoading ? (
@@ -286,87 +285,78 @@ const IdeasPage: React.FC = () => {
               return (
                 <Card
                   key={project.id}
-                  className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer bg-white"
-                  onClick={() => handleCardClick(String(project.id))}
+                  className="glassmorphism h-full p-6 card-hover border border-white/20 bg-[#131620]/90 backdrop-blur-xl relative overflow-hidden flex flex-col cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
                 >
-                  <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4">
-                    <CardTitle className="text-xl font-semibold line-clamp-2">
-                      {project.PS}
-                    </CardTitle>
-                  </CardHeader>
-                  
-                  <CardContent className="p-5 flex flex-col space-y-4">
-                    <div className="text-sm text-gray-500 flex items-center">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="mr-1.5"
-                      >
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                      </svg>
-                      {new Date(project.createdat).toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                  {/* Project label in top left */}
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="inline-block px-3 py-1 rounded-full bg-background/40 text-cyber-pink text-xs font-medium backdrop-blur-md border border-cyber-pink/20">
+                      Project
                     </div>
-                    
-                    <div className="flex justify-between gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 flex items-center justify-center gap-1"
-                        onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
-                          handleShare(project, e)
-                        }
-                      >
-                        <ShareIcon size={14} /> Share
+
+                    {/* Action buttons in top right */}
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleShare(project, e); }}>
+                        <ShareIcon size={14} className="text-cyber-blue" />
                       </Button>
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleDeleteClick(project, e); }}>
+                        <TrashIcon size={14} className="text-red-500" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Main content area */}
+                  <div onClick={() => handleCardClick(String(project.id))} className="flex flex-col flex-1">
+                    <h3 className="text-2xl font-bold mb-2 text-white">{project.PS}</h3>
+                    <p className="text-sm text-gray-400 mb-4 line-clamp-2">
+                      {project.PSdescription || 'No description provided.'}
+                    </p>
+                    
+                    {/* Date with calendar icon */}
+                    <div className="mt-auto pt-3 mb-4">
+                      <div className="flex items-center gap-1 text-xs text-gray-400">
+                        <Calendar size={14} className="w-3 h-3" />
+                        <span>Created {new Date(project.createdat).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+
+                    {/* Full-width view project button */}
+                    <div className="grid grid-cols-1 gap-3">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCardClick(String(project.id));
+                        }} 
+                        className="w-full px-4 py-2 border border-electric-blue/70 text-electric-blue hover:bg-electric-blue/10 rounded-lg text-sm transition-colors flex items-center justify-center"
+                      >
+                        View Project <ChevronRight className="ml-1 w-4 h-4" />
+                      </button>
                       
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 flex items-center justify-center gap-1 text-red-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-                        onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
-                          handleDeleteClick(project, e)
-                        }
-                      >
-                        <TrashIcon size={14} /> Delete
-                      </Button>
+                      {/* Team button below */}
+                      {teamForProject ? (
+                        <Button 
+                          variant="default" 
+                          className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600"
+                          onClick={(e) => {
+                            e.stopPropagation(); 
+                            handleGoToTeam(teamForProject, e);
+                          }}
+                        >
+                          <UsersIcon size={16} /> Go to Team
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline" 
+                          className="flex items-center justify-center gap-2 border-dashed"
+                          onClick={(e) => {
+                            e.stopPropagation(); 
+                            handleOpenTeamModal(project, e);
+                          }}
+                        >
+                          <UsersIcon size={16} /> Create Team
+                        </Button>
+                      )}
                     </div>
-                    
-                    {teamForProject ? (
-                      <Button
-                        variant="default"
-                        className="w-full flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600"
-                        onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
-                          handleGoToTeam(teamForProject, e)
-                        }
-                      >
-                        <UsersIcon size={16} /> Go to Team
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        className="w-full flex items-center justify-center gap-2 border-dashed"
-                        onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
-                          handleOpenTeamModal(project, e)
-                        }
-                      >
-                        <UsersIcon size={16} /> Create Team
-                      </Button>
-                    )}
-                  </CardContent>
+                  </div>
                 </Card>
               );
             })}
@@ -389,7 +379,7 @@ const IdeasPage: React.FC = () => {
                 type="text"
                 readOnly
                 value={`${window.location.origin}/ideas/${selectedProject.id}`}
-                className="bg-gray-50"
+                className="bg-gray-50 text-black"
               />
               <Button
                 onClick={handleCopy}

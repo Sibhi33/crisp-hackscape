@@ -74,7 +74,7 @@ const AIChat: React.FC<AIChatProps> = ({
   const realtimeSubscriptionRef = useRef<any>(null);
   const [conversationSummary, setConversationSummary] = useState<string>('');
 
-  const [themeStyles, _setThemeStyles] = useState({
+    const [themeStyles, _setThemeStyles] = useState({
     background: darkMode ? 'bg-gray-900' : 'bg-white',
     text: darkMode ? 'text-white' : 'text-black',
     borderColor: darkMode ? 'border-gray-700' : 'border-gray-200',
@@ -84,53 +84,53 @@ const AIChat: React.FC<AIChatProps> = ({
     inputBg: darkMode ? 'bg-gray-800' : 'bg-white',
     inputBorder: darkMode ? 'border-gray-600' : 'border-gray-300',
     inputText: darkMode ? 'text-white' : 'text-gray-900',
-    modelSelectBg: darkMode
+      modelSelectBg: darkMode
       ? 'bg-gray-800 text-gray-200'
       : 'bg-gray-100 text-gray-800',
-  });
+    });
 
-  // Format the AI response based on model
-  const formatAIResponse = useCallback((text: string, modelId: string) => {
-    // Format deepseek model responses with <think> tags
-    if (modelId === 'reasoning' && text.includes('<think>')) {
-      text = text.replace(/<think>[\s\S]*?<\/think>/g, (match) => {
-        // Extract the content inside the think tags
-        const thinkContent = match.replace(/<think>|<\/think>/g, '');
-        return `<div class="thinking-block p-3 my-2 border-l-4 border-indigo-500 bg-opacity-20 ${darkMode ? 'bg-indigo-900' : 'bg-indigo-50'}">
-            <strong>Thinking:</strong>
-            <div class="pl-2 mt-1">${thinkContent}</div>`;
-      });
-    }
+    // Format the AI response based on model
+    const formatAIResponse = useCallback((text: string, modelId: string) => {
+      // Format deepseek model responses with <think> tags
+      if (modelId === 'reasoning' && text.includes('<think>')) {
+        text = text.replace(/<think>[\s\S]*?<\/think>/g, (match) => {
+          // Extract the content inside the think tags
+          const thinkContent = match.replace(/<think>|<\/think>/g, '');
+          return `<div class="thinking-block p-3 my-2 border-l-4 border-indigo-500 bg-opacity-20 ${darkMode ? 'bg-indigo-900' : 'bg-indigo-50'}">
+              <strong>Thinking:</strong>
+              <div class="pl-2 mt-1">${thinkContent}</div>`;
+        });
+      }
 
-    // Improved link formatting using our special format LINK[URL|TEXT]
-    text = text.replace(/LINK\[(https?:\/\/[^|]+)\|([^\]]+)\]/g, '[$2]($1)');
+      // Improved link formatting using our special format LINK[URL|TEXT]
+      text = text.replace(/LINK\[(https?:\/\/[^|]+)\|([^\]]+)\]/g, '[$2]($1)');
 
-    return text;
-  }, [darkMode]);
+      return text;
+    }, [darkMode]);
 
-  // Create system prompt for AI
-  const createSystemPrompt = useCallback((modelId: string, projectName?: string) => {
-    const linkInstructions = `
-      When you want to include links in your response, use this exact format: 
-      LINK[URL|TEXT]
-      For example: LINK[https://example.com|Example Website] will be displayed as a clickable link.
-      Always include the full URL with protocol (https:// or http://).
-    `;
+    // Create system prompt for AI
+    const createSystemPrompt = useCallback((modelId: string, projectName?: string) => {
+      const linkInstructions = `
+        When you want to include links in your response, use this exact format: 
+        LINK[URL|TEXT]
+        For example: LINK[https://example.com|Example Website] will be displayed as a clickable link.
+        Always include the full URL with protocol (https:// or http://).
+      `;
 
-    // Return model-specific system prompts
-    if (modelId === 'reasoning') {
-      return `You are a technical AI assistant specializing in software development. You help developers with coding questions.
-              You can showcase your reasoning skills by using <think></think> tags for your thought process.
-              ${linkInstructions}`;
-    } else {
-      return `You are a helpful AI assistant for the project ${projectName || 'unknown'}. 
-              Provide concise, accurate information.
-              ${linkInstructions}`;
-    }
-  }, []);
+      // Return model-specific system prompts
+      if (modelId === 'reasoning') {
+        return `You are a technical AI assistant specializing in software development. You help developers with coding questions.
+                You can showcase your reasoning skills by using <think></think> tags for your thought process.
+                ${linkInstructions}`;
+      } else {
+        return `You are a helpful AI assistant for the project ${projectName || 'unknown'}. 
+                Provide concise, accurate information.
+                ${linkInstructions}`;
+      }
+    }, []);
 
   // Setup realtime subscription
-  const setupRealtimeSubscription = useCallback(async () => {
+    const setupRealtimeSubscription = useCallback(async () => {
     if (!teamId) return;
 
     // Remove existing subscription if it exists
@@ -165,7 +165,7 @@ const AIChat: React.FC<AIChatProps> = ({
               ai_message,
               created_at,
               sender_id,
-              model,
+                model,
               profiles!sender_id(
                 display_name,
                 email,
@@ -180,51 +180,51 @@ const AIChat: React.FC<AIChatProps> = ({
             return;
           }
 
-          // Add user message
-          if (data.user_message) {
-            // Fix the typing issue with profile data
-            const profile = data.profiles as unknown as { 
-              display_name: string; 
-              email: string; 
-              avatar_url: string 
-            };
-            const senderName = profile.display_name || profile.email || 'User';
-            setMessages((prev) => [
-              ...prev,
-              {
+            // Add user message
+            if (data.user_message) {
+              // Fix the typing issue with profile data
+              const profile = data.profiles as unknown as { 
+                display_name: string; 
+                email: string; 
+                avatar_url: string 
+              };
+              const senderName = profile.display_name || profile.email || 'User';
+              setMessages((prev) => [
+                ...prev,
+                {
                 id: `${data.id}-user`,
                 text: data.user_message,
-                sender: senderName,
+                  sender: senderName,
                 sender_id: data.sender_id,
-                sender_name: senderName,
-                avatar_url: profile.avatar_url,
+                  sender_name: senderName,
+                  avatar_url: profile.avatar_url,
                 timestamp: new Date(data.created_at),
-              },
-            ]);
-          }
+                },
+              ]);
+            }
 
-          // Add AI response
-          if (data.ai_message) {
-            setMessages((prev) => [
-              ...prev,
-              {
+            // Add AI response
+            if (data.ai_message) {
+              setMessages((prev) => [
+                ...prev,
+                {
                 id: `${data.id}-ai`,
                 text: data.ai_message,
                 sender: 'AI Assistant',
                 timestamp: new Date(data.created_at),
-                model: data.model || 'Unknown',
-              },
-            ]);
+                  model: data.model || 'Unknown',
+                },
+              ]);
           }
         }
       )
       .subscribe();
 
     realtimeSubscriptionRef.current = channel;
-  }, [user?.id, teamId]);
+    }, [user?.id, teamId]);
 
-  // Handle external message
-  const handleExternalMessage = useCallback(async (text: string) => {
+    // Handle external message
+    const handleExternalMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
 
     const userMessage: Message = {
@@ -297,159 +297,159 @@ const AIChat: React.FC<AIChatProps> = ({
       ]);
     } finally {
       setIsTyping(false);
-    }
-  }, [
-    user?.id,
-    user?.user_metadata?.display_name,
-    messages, 
-    projectName, 
-    selectedModel.id, 
-    selectedModel.model, 
-    createSystemPrompt, 
-    formatAIResponse, 
-    onMessageProcessed
-  ]);
-
-  // Add welcome message if there are no messages
-  useEffect(() => {
-    if (messages.length === 0) {
-      setMessages([
-        {
-          id: 'welcome',
-          text: `I'm here to help with your project "${projectName || 'your project'}". Ask me anything!`,
-          sender: 'AI Assistant',
-          timestamp: new Date(),
-          model: selectedModel.id,
-        },
-      ]);
-    }
-  }, [projectName, messages.length, selectedModel.id]);
-
-  // Process incoming message from parent component (from team chat)
-  useEffect(() => {
-    if (message && message.trim() !== '') {
-      handleExternalMessage(message);
-    }
-  }, [message, handleExternalMessage]);
-
-  // Fetch previous messages
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (!teamId) return;
-
-      // First, log what we're doing to debug
-      console.log('Fetching messages for team:', teamId);
-
-      const { data, error } = await supabase
-        .from('ai_messages')
-        .select(`
-          id,
-          user_message,
-          ai_message,
-          created_at,
-          sender_id,
-          model,
-          profiles!sender_id(
-            display_name,
-            email,
-            avatar_url
-          )
-        `)
-        .eq('team_id', teamId)
-        .order('created_at', { ascending: true });
-
-      // Add debugging to see what we're getting back
-      if (data && data.length > 0) {
-        console.log('First message profiles data:', data[0].profiles);
       }
+    }, [
+      user?.id,
+      user?.user_metadata?.display_name,
+      messages, 
+      projectName, 
+      selectedModel.id, 
+      selectedModel.model, 
+      createSystemPrompt, 
+      formatAIResponse, 
+      onMessageProcessed
+    ]);
 
-      if (error) {
-        console.error('Error fetching messages:', error);
-        return;
+    // Add welcome message if there are no messages
+    useEffect(() => {
+      if (messages.length === 0) {
+        setMessages([
+          {
+            id: 'welcome',
+            text: `I'm here to help with your project "${projectName || 'your project'}". Ask me anything!`,
+            sender: 'AI Assistant',
+            timestamp: new Date(),
+            model: selectedModel.id,
+          },
+        ]);
       }
+    }, [projectName, messages.length, selectedModel.id]);
 
-      if (data) {
-        // Debug what data looks like
-        console.log('Sample message data structure:', data.length > 0 ? data[0] : 'No messages');
-        
-        const formattedMessages: Message[] = [];
-        data.forEach((msg) => {
-          // Debug individual message profiles
-          console.log(`Message ${msg.id} profiles:`, msg.profiles);
+    // Process incoming message from parent component (from team chat)
+    useEffect(() => {
+      if (message && message.trim() !== '') {
+        handleExternalMessage(message);
+      }
+    }, [message, handleExternalMessage]);
+
+    // Fetch previous messages
+    useEffect(() => {
+      const fetchMessages = async () => {
+        if (!teamId) return;
+
+        // First, log what we're doing to debug
+        console.log('Fetching messages for team:', teamId);
+
+        const { data, error } = await supabase
+          .from('ai_messages')
+          .select(`
+            id,
+            user_message,
+            ai_message,
+            created_at,
+            sender_id,
+            model,
+            profiles!sender_id(
+              display_name,
+              email,
+              avatar_url
+            )
+          `)
+          .eq('team_id', teamId)
+          .order('created_at', { ascending: true });
+
+        // Add debugging to see what we're getting back
+        if (data && data.length > 0) {
+          console.log('First message profiles data:', data[0].profiles);
+        }
+
+        if (error) {
+          console.error('Error fetching messages:', error);
+          return;
+        }
+
+        if (data) {
+          // Debug what data looks like
+          console.log('Sample message data structure:', data.length > 0 ? data[0] : 'No messages');
           
-          // Add user message
-          if (msg.user_message) {
-            // Check various profile formats and log what we find
-            const profilesExist = !!msg.profiles;
-            const profilesIsArray = Array.isArray(msg.profiles);
-            const profilesHasItems = profilesIsArray && msg.profiles.length > 0;
-            const profilesIsObject = typeof msg.profiles === 'object' && !Array.isArray(msg.profiles);
+          const formattedMessages: Message[] = [];
+          data.forEach((msg) => {
+            // Debug individual message profiles
+            console.log(`Message ${msg.id} profiles:`, msg.profiles);
             
-            console.log(`Message ${msg.id} profile checks:`, {
-              exists: profilesExist,
-              isArray: profilesIsArray,
-              hasItems: profilesHasItems,
-              isObject: profilesIsObject
-            });
-            
-            // Get display name using various methods to see what works
-            let displayName = 'Team member';
-            
-            if (profilesIsArray && profilesHasItems) {
-              displayName = msg.profiles[0].display_name || msg.profiles[0].email || 'Team member';
-            } else if (profilesIsObject) {
-              displayName = (msg.profiles as any).display_name || (msg.profiles as any).email || 'Team member';
+            // Add user message
+            if (msg.user_message) {
+              // Check various profile formats and log what we find
+              const profilesExist = !!msg.profiles;
+              const profilesIsArray = Array.isArray(msg.profiles);
+              const profilesHasItems = profilesIsArray && msg.profiles.length > 0;
+              const profilesIsObject = typeof msg.profiles === 'object' && !Array.isArray(msg.profiles);
+              
+              console.log(`Message ${msg.id} profile checks:`, {
+                exists: profilesExist,
+                isArray: profilesIsArray,
+                hasItems: profilesHasItems,
+                isObject: profilesIsObject
+              });
+              
+              // Get display name using various methods to see what works
+              let displayName = 'Team member';
+              
+              if (profilesIsArray && profilesHasItems) {
+                displayName = msg.profiles[0].display_name || msg.profiles[0].email || 'Team member';
+              } else if (profilesIsObject) {
+                displayName = (msg.profiles as any).display_name || (msg.profiles as any).email || 'Team member';
+              }
+              
+              formattedMessages.push({
+                id: `${msg.id}-user`,
+                text: msg.user_message,
+                sender: msg.sender_id === user?.id ? 'You' : 'Team member',
+                sender_id: msg.sender_id,
+                sender_name: msg.sender_id === user?.id 
+                  ? (user?.user_metadata?.display_name || 'You') 
+                  : displayName,
+                timestamp: new Date(msg.created_at),
+                avatar_url: profilesIsArray && profilesHasItems 
+                  ? msg.profiles[0].avatar_url 
+                  : profilesIsObject 
+                    ? (msg.profiles as any).avatar_url 
+                    : undefined,
+              });
+              
+              // Log what we decided to use
+              console.log(`Using display name for message ${msg.id}:`, displayName);
             }
             
-            formattedMessages.push({
-              id: `${msg.id}-user`,
-              text: msg.user_message,
-              sender: msg.sender_id === user?.id ? 'You' : 'Team member',
-              sender_id: msg.sender_id,
-              sender_name: msg.sender_id === user?.id 
-                ? (user?.user_metadata?.display_name || 'You') 
-                : displayName,
-              timestamp: new Date(msg.created_at),
-              avatar_url: profilesIsArray && profilesHasItems 
-                ? msg.profiles[0].avatar_url 
-                : profilesIsObject 
-                  ? (msg.profiles as any).avatar_url 
-                  : undefined,
-            });
-            
-            // Log what we decided to use
-            console.log(`Using display name for message ${msg.id}:`, displayName);
-          }
-          
-          // Add AI message
-          if (msg.ai_message) {
-            formattedMessages.push({
-              id: `${msg.id}-ai`,
-              text: msg.ai_message,
-              sender: 'AI Assistant',
-              sender_id: msg.sender_id,
-              sender_name: 'AI Assistant',
-              timestamp: new Date(msg.created_at),
-              model: (msg as any).model || 'research',
-            });
-          }
-        });
-        setMessages(formattedMessages);
-      }
-    };
+            // Add AI message
+            if (msg.ai_message) {
+              formattedMessages.push({
+                id: `${msg.id}-ai`,
+                text: msg.ai_message,
+                sender: 'AI Assistant',
+                sender_id: msg.sender_id,
+                sender_name: 'AI Assistant',
+                timestamp: new Date(msg.created_at),
+                model: (msg as any).model || 'research',
+              });
+            }
+          });
+          setMessages(formattedMessages);
+        }
+      };
 
-    fetchMessages();
+      fetchMessages();
 
-    // Set up realtime subscription
-    setupRealtimeSubscription();
+      // Set up realtime subscription
+      setupRealtimeSubscription();
 
-    // Cleanup function to remove subscription
-    return () => {
-      if (realtimeSubscriptionRef.current) {
-        supabase.removeChannel(realtimeSubscriptionRef.current);
-      }
-    };
-  }, [teamId, setupRealtimeSubscription, user?.id, user?.user_metadata?.display_name]);
+      // Cleanup function to remove subscription
+      return () => {
+        if (realtimeSubscriptionRef.current) {
+          supabase.removeChannel(realtimeSubscriptionRef.current);
+        }
+      };
+    }, [teamId, setupRealtimeSubscription, user?.id, user?.user_metadata?.display_name]);
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -696,7 +696,7 @@ const AIChat: React.FC<AIChatProps> = ({
 
   // Custom components for ReactMarkdown
   const components = {
-    code({ _node, inline, className, children, ...props }: any) {
+      code({ _node, inline, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || '');
       return !inline && match ? (
         <CodeBlock
@@ -712,7 +712,7 @@ const AIChat: React.FC<AIChatProps> = ({
         </code>
       );
     },
-    a: ({ _node, ...props }: any) => (
+      a: ({ _node, ...props }: any) => (
       <a
         className={`${darkMode ? 'text-blue-400' : 'text-blue-600'} underline hover:${darkMode ? 'text-blue-300' : 'text-blue-800'} cursor-pointer`}
         target="_blank"
@@ -727,39 +727,39 @@ const AIChat: React.FC<AIChatProps> = ({
         {...props}
       />
     ),
-    h1: ({ _node, ...props }: any) => (
+      h1: ({ _node, ...props }: any) => (
       <h1
         className={`text-2xl font-bold mt-4 mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}
         {...props}
       />
     ),
-    h2: ({ _node, ...props }: any) => (
+      h2: ({ _node, ...props }: any) => (
       <h2
         className={`text-xl font-bold mt-3 mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}
         {...props}
       />
     ),
-    h3: ({ _node, ...props }: any) => (
+      h3: ({ _node, ...props }: any) => (
       <h3
         className={`text-lg font-bold mt-3 mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}
         {...props}
       />
     ),
-    p: ({ _node, ...props }: any) => <p className="mb-2" {...props} />,
-    ul: ({ _node, ...props }: any) => (
+      p: ({ _node, ...props }: any) => <p className="mb-2" {...props} />,
+      ul: ({ _node, ...props }: any) => (
       <ul className="list-disc pl-5 mb-2" {...props} />
     ),
-    ol: ({ _node, ...props }: any) => (
+      ol: ({ _node, ...props }: any) => (
       <ol className="list-decimal pl-5 mb-2" {...props} />
     ),
-    li: ({ _node, ...props }: any) => <li className="mb-1" {...props} />,
-    blockquote: ({ _node, ...props }: any) => (
+      li: ({ _node, ...props }: any) => <li className="mb-1" {...props} />,
+      blockquote: ({ _node, ...props }: any) => (
       <blockquote
         className={`border-l-4 ${darkMode ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-gray-50'} pl-4 py-1 italic my-2 rounded`}
         {...props}
       />
     ),
-    div: ({ _node, ...props }: any) => {
+      div: ({ _node, ...props }: any) => {
       // Check if this is a thinking block
       if (props.className && props.className.includes('thinking-block')) {
         return <div {...props} />;
@@ -859,7 +859,7 @@ const AIChat: React.FC<AIChatProps> = ({
       {/* CHIPS Info Panel */}
       {showChipsInfo && (
         <div
-          className={`p-4 ${themeStyles.modelSelectBg} border-b ${themeStyles.borderColor} transition-all ease-in-out duration-300`}
+            className={`p-4 ${themeStyles.modelSelectBg} border-b ${themeStyles.borderColor} transition-all ease-in-out duration-300`}
         >
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center mb-3">
